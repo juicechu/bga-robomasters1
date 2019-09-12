@@ -8,6 +8,14 @@ timer_start = 1
 timer_stop = 2
 timer_reset = 3
 
+# Time "enum".
+localtime_year = 1
+localtime_month = 2
+localtime_day = 3
+localtime_hour = 4
+localtime_minute = 5
+localtime_second = 6
+
 # Objective: Sets the travel mode
 #
 # * Chassis Lead Mode: The gimbal follows the chassis to rotate along the yaw
