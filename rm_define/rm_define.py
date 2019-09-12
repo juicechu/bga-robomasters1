@@ -16,7 +16,7 @@ localtime_hour = 4
 localtime_minute = 5
 localtime_second = 6
 
-# Objective: Sets the travel mode
+# Sets the travel mode.
 #
 # * Chassis Lead Mode: The gimbal follows the chassis to rotate along the yaw
 #   axis.
