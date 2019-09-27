@@ -30,6 +30,9 @@ AIM_DONE        = 2
 # Note that no matter which method is used, at least 2 passes are required to
 # get an AIM_DONE as the first pass will always return AIM_IN_PROGRESS (unless
 # the robot was already pointing directly to the destination position).
+#
+# Actions that require a target lock should only be done when AIM_DONE is
+# returned.
 def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
     if dst_x < 0.0 or dst_x > 1.0 or dst_y < 0.0 or dst_y > 1.0:
         # Invalid dst_x or dst_y.
