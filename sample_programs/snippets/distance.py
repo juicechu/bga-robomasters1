@@ -56,3 +56,15 @@ def FocalLength(knownHeightOrWidth, knownDistance, heightOrWidth):
 def Distance(knownHeightOrWidth, focalLength, heightOrWidth):
     return (knownHeightOrWidth * focalLength) / heightOrWidth
 
+# Compute distance in millimiters to a detected Robomaster S1 given its
+# bounding box height.
+def DistanceToRobotMM(height):
+    return Distance(ROBOT_KNOWN_HEIGHT_MM, ROBOT_CAMERA_FOCAL_LENGTH,
+            height)
+
+# Compute distance in inches to a detected Robomaster S1 given its
+# bounding box height).
+def DistanceToRobotIn(height):
+    return Distance(ROBOT_KNOWN_HEIGHT_IN, ROBOT_CAMERA_FOCAL_LENGTH,
+            height)
+
