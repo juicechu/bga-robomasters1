@@ -1,13 +1,18 @@
+# Program entry point. Set up robot and start looking for targets.
 def start():
-     vision_ctrl.enable_detection(rm_define.vision_detection_car)
-     gimbal_ctrl.set_rotate_speed(60)
+    # Enable S1 robot identification.
+    vision_ctrl.enable_detection(rm_define.vision_detection_car)
 
-     while True:
-         media_ctrl.play_sound(rm_define.media_sound_scanning)
-         gimbal_ctrl.yaw_ctrl(-90)
+    # Set reasonable gimbal speed for finding new targets.
+    gimbal_ctrl.set_rotate_speed(60)
 
-         media_ctrl.play_sound(rm_define.media_sound_scanning)
-         gimbal_ctrl.yaw_ctrl(90)
+    # Move gimbal and chassis independently.
+    robot_ctrl.set_mode(rm_define.robot_mode_free)
+
+    while True:
+	# Sweep form side to side.
+        gimbal_ctrl.yaw_ctrl(-90)
+        gimbal_ctrl.yaw_ctrl(90)
 
 # Return the bounding box information (X, Y, W, H) for the closest detected
 # robot.
@@ -22,7 +27,7 @@ def FindClosestRobot(robotDetectionInfo):
 # items per detected object as it varies for a detected robot or a detected
 # vision marker, for example.
 def FindClosest(detectionInfo, numEntriesPerObject):
-    numEntries = len(robotDetectionInfo) - 1  # Ignore size entry.
+    numEntries = len(detectionInfo) - 1  # Ignore size entry.
     numObjects = numEntries // numEntriesPerObject
     if numObjects != detectionInfo[0]:
         # Got an unexpected number of entries.
@@ -46,13 +51,13 @@ def FindClosest(detectionInfo, numEntriesPerObject):
             closestIndex = i
 
     # Return only the relevant info about the selected object.
-    return detectionInfo[closestIndex:closestIndex + numEntriesPerObject - 1]
+    return detectionInfo[closestIndex:closestIndex + numEntriesPerObject]
 
 # Known height of a Robomaster S1 in millimeters and inches.
 ROBOT_KNOWN_HEIGHT_MM = 270.0
 ROBOT_KNOWN_HEIGHT_IN = 10.6
 
-# Due to the corrdinate system used, the focal length can be inferred directly
+# Due to the coordinate system used, the focal length can be inferred directly
 # (you can still compute it yourself using FocalLength() to see it matches).
 ROBOT_CAMERA_FOCAL_LENGTH = 1.0
 
@@ -61,7 +66,7 @@ ROBOT_CAMERA_FOCAL_LENGTH = 1.0
 def Distance(knownHeightOrWidth, focalLength, heightOrWidth):
     return (knownHeightOrWidth * focalLength) / heightOrWidth
 
-# Compute distance in millimiters to a detected Robomaster S1 given its
+# Compute distance in millimeters to a detected Robomaster S1 given its
 # bounding box height.
 def DistanceToRobotMM(height):
     return Distance(ROBOT_KNOWN_HEIGHT_MM, ROBOT_CAMERA_FOCAL_LENGTH,
@@ -121,9 +126,9 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
     delta_x = dst_x - src_x
     delta_y = src_y - dst_y
 
-    if abs(delta_x) <= 0.1 and abs(err_y) <= 0.1:
+    if abs(delta_x) <= 0.1 and abs(delta_y) <= 0.1:
         # We are centered in the target already. There is nothing else to do.
-        if not None pid_yaw:
+        if pid_yaw is not None:
             # We are in PID mode. Stop gimbal rotation that might still be in
             # progress.
             gimbal_ctrl.rotate_with_speed(0, 0)
@@ -151,6 +156,8 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
         delta_yaw_angle = ROBOT_CAMERA_HORIZONTAL_FOV * (delta_x)
         delta_pitch_angle = ROBOT_CAMERA_VERTICAL_FOV * (delta_y)
 
+        print(gimbal_yaw_angle + delta_yaw_angle)
+        
         # Move gimbal so the sight points directly to the target.
         gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + delta_yaw_angle,
                 gimbal_pitch_angle + delta_pitch_angle)
@@ -158,10 +165,18 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
     return AIM_IN_PROGRESS
 
 def vision_recognized_car(msg):
+    # Create PID controllers for pitch and yaw.
+    pid_pitch = rm_ctrl.PIDCtrl()
+    pid_yaw = rm_ctrl.PIDCtrl()
+
+    # Set contoller parameters.
+    pid_pitch.set_ctrl_params(90,0,3)
+    pid_yaw.set_ctrl_params(120,0,5)
+    
     while True:
         robot_detection_info = vision_ctrl.get_car_detection_info()
         if robot_detection_info[0] == 0:
-            return
+            break
 
         print(f'Seeing {robot_detection_info[0]} robots.')
 
@@ -169,18 +184,34 @@ def vision_recognized_car(msg):
         if closest_robot_info is None:
             print(f'Unexpected robot data. Abort tracking.')
             break
+            
+        distance = DistanceToRobotMM(closest_robot_info[3])
+	if distance is None:
+	    print(f'Can\'t get distance. Abort tracking.')
+	    break
 
-        distance_in_meters = DistanceToRobotMM(closestRobotInfo[3]) / 1000
+	distance_in_meters = distance / 1000
 
         print(f'Closest robot is {distance_in_meters:.2f} meters away.')
 
-        if distance_in_meters < 3.0:
-            print(f'Aiming...')
+        print(f'Aiming...')            
 
-            aim_status = Aim(closest_robot_info[0], closest_robot_info[1])
-            if aim_status == AIM_DONE:
-                print('Target locked. Firing...')
-                #gun_ctrl.fire_once()
+        aim_status = Aim(closest_robot_info[0], closest_robot_info[1],
+                         pid_yaw, pid_pitch)
+        if aim_status == AIM_DONE:
+            print('Target locked.')
+
+            if distance_in_meters <= 2.0:
+		print(f'Fire!')
+            	gun_ctrl.fire_once()
+            else:
+                print(f'Too far. Not firing.')
+
         else:
-            print(f'Too far... Ignoring.')
+            if aim_status == AIM_IN_PROGRESS:
+		# Give some time for the gimbal position to stabilize as
+                # otherwise we might get bogus target position data.
+                time.sleep(0.1)   
+    
+    gimbal_ctrl.rotate_with_speed(0, 0)
 
