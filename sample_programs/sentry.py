@@ -216,11 +216,11 @@ def vision_recognized_car(msg):
             break
             
         distance = DistanceToRobotMM(closest_robot_info[3])
-	if distance is None:
-	    print(f'Can\'t get distance. Abort tracking.')
-	    break
+        if distance is None:
+            print(f'Can\'t get distance. Abort tracking.')
+            break
 
-	distance_in_meters = distance / 1000
+        distance_in_meters = distance / 1000
 
         print(f'Closest robot is {distance_in_meters:.2f} meters away.')
 
