@@ -17,9 +17,10 @@ class FireControl:
 
         self.last_fire = time.time()
 
+        media_ctrl.play_sound(rm_define.media_sound_shoot)
+
         if self.simulated:
             # Simulate firing with the trajectory light.
-            media_ctrl.play_sound(rm_define.media_sound_shoot)
             led_ctrl.gun_on()
             led_ctrl_gun_off()
         else:
