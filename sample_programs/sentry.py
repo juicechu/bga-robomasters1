@@ -18,7 +18,8 @@ class FireControl:
         self.last_fire = time.time()
 
         if self.simulated:
-            # Simulte firing with the trajectory light.
+            # Simulate firing with the trajectory light.
+            media_ctrl.play_sound(rm_define.media_sound_shoot)
             led_ctrl.gun_on()
             led_ctrl_gun_off()
         else:
@@ -39,9 +40,15 @@ def start():
     # Move gimbal and chassis independently.
     robot_ctrl.set_mode(rm_define.robot_mode_free)
 
+    # Rotating white leds (searching for targets).
+    led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
+            rm_define.effect_marquee)
+
     while True:
 	# Sweep form side to side.
+        media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
         gimbal_ctrl.yaw_ctrl(-90)
+        media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
         gimbal_ctrl.yaw_ctrl(90)
 
 # Return the bounding box information (X, Y, W, H) for the closest detected
@@ -203,6 +210,9 @@ def vision_recognized_car(msg):
     pid_pitch.set_ctrl_params(90,0,3)
     pid_yaw.set_ctrl_params(120,0,5)
     
+    # Keep track of previous aim status.
+    previous_aim_status = AIM_ERROR
+
     while True:
         robot_detection_info = vision_ctrl.get_car_detection_info()
         if robot_detection_info[0] == 0:
@@ -224,12 +234,15 @@ def vision_recognized_car(msg):
 
         print(f'Closest robot is {distance_in_meters:.2f} meters away.')
 
-        print(f'Aiming...')            
-
         aim_status = Aim(closest_robot_info[0], closest_robot_info[1],
                          pid_yaw, pid_pitch)
         if aim_status == AIM_DONE:
             print('Target locked.')
+
+            if previous_aim_status != aim_status:
+                # Rotating red lights (Target locked).
+                led_ctrl.set_top_led(rm_define.armor_top_all, 255, 0, 0,
+                    rm_define.effect_marquee)
 
             if distance_in_meters <= 2.0:
 		print(f'Fire!')
@@ -239,9 +252,21 @@ def vision_recognized_car(msg):
 
         else:
             if aim_status == AIM_IN_PROGRESS:
+                print(f'Aiming...')
+
+                if previous_aim_status != aim_status:
+                    # Rotating yellow lights (tracking target).
+                    led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 0,
+                        rm_define.effect_marquee)
+
 		# Give some time for the gimbal position to stabilize as
                 # otherwise we might get bogus target position data.
-                time.sleep(0.1)   
+                time.sleep(0.1)
+
+        previous_aim_status = aim_status
     
     gimbal_ctrl.rotate_with_speed(0, 0)
 
+    # Back to rotating white leds (searching for targets).
+    led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
+            rm_define.effect_marquee)
