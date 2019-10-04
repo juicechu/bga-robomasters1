@@ -215,18 +215,18 @@ def Aim(dst_x, dst_y, target_tracking_mode, pid_yaw = None, pid_pitch = None):
     return AIM_IN_PROGRESS
 
 def vision_recognized_marker_trans_all(msg):
-    target_recognized(msg, 5)
+    target_recognized(msg, vision_ctrl.get_marker_detection_info, 5)
 
 def vision_recognized_marker_number_all(msg):
-    target_recognized(msg, 5)
+    target_recognized(msg, vision_ctrl.get_marker_detection_info, 5)
 
 def vision_recognized_marker_letter_all(msg):
-    target_recognized(msg, 5)
+    target_recognized(msg, vision_ctrl.get_marker_detection_info, 5)
 
 def vision_recognized_car(msg):
-    target_recognized(msg, 4)
+    target_recognized(msg, vision_ctrl.get_car_detection_info, 4)
 
-def target_recognized(msg, num_entries_per_target):
+def target_recognized(msg, get_detection_info, num_entries_per_target):
     pid_pitch = None
     pid_yaw = None
     if PID_ENABLED == 0:
@@ -244,12 +244,7 @@ def target_recognized(msg, num_entries_per_target):
     previous_aim_status = AIM_ERROR
 
     while True:
-        target_detection_info = []
-        if TARGET_TYPE == 0:
-            target_detection_info = vision_ctrl.get_car_detection_info()
-        else:
-            target_detection_info = vision_ctrl.get_marker_detection_info()
-
+        target_detection_info = get_detection_info()
         if target_detection_info[0] == 0:
             break
 
