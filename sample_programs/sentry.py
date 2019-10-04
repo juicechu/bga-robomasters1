@@ -15,7 +15,7 @@ TARGET_TYPE = 0
 TARGET_TRACKING_MODE = 0
 
 # If true, automatically fire on lock.
-AUTO_FIRE_ON_LOCK = True
+AUTO_FIRE_ON_LOCK = False
 
 # Maximum distance (in meters) the target must be to be fired upon when
 # AUTO_FIRE_ON_LOCK is enabled.
@@ -255,8 +255,9 @@ def vision_recognized_car(msg):
                     rm_define.effect_marquee)
 
             if distance_in_meters <= 2.0:
-		print(f'Fire!')
-            	gun_ctrl.fire_once()
+                if AUTO_FIRE_ON_LOCK:
+		    print(f'Fire!')
+            	    gun_ctrl.fire_once()
             else:
                 print(f'Too far. Not firing.')
 
