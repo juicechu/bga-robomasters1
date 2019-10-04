@@ -47,12 +47,18 @@ def start():
     led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
             rm_define.effect_marquee)
 
-    while True:
-	# Sweep form side to side.
-        media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
-        gimbal_ctrl.yaw_ctrl(-90)
-        media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
-        gimbal_ctrl.yaw_ctrl(90)
+    if TARGET_SEARCHING:
+        while True:
+	    # Sweep from side to side.
+            media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
+            gimbal_ctrl.yaw_ctrl(-90)
+            media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
+            gimbal_ctrl.yaw_ctrl(90)
+    else:
+        while True:
+            # Just sleep as there is nothing to do other than waiting for
+            # a target to be identified.
+            time.sleep(60)
 
 # Return the bounding box information (X, Y, W, H) for the closest detected
 # robot.
