@@ -25,8 +25,8 @@ AUTO_FIRE_MAX_DISTANCE = 2.0
 PID_ENABLED = True
 
 # PID controller setup ([P, I, D]).
-PID_PITCH_PARAMETERS = [0, 0, 0]
-PID_YAW_PARAMETERS   = [0, 0, 0]
+PID_PITCH_PARAMETERS = [90,  0, 3]
+PID_YAW_PARAMETERS   = [120, 0, 5]
 
 # If true, allows controller override (i.e. manual control) of the Robot when
 # Sentry Mode is enabled.
@@ -215,14 +215,16 @@ def vision_recognized_car(msg):
 def target_recognized(msg, num_entries_per_target):
     pid_pitch = None
     pid_yaw = None
-    if TARGET_TRACKING_MODE == 0:
+    if PID_ENABLED == 0:
         # Create PID controllers for pitch and yaw.
         pid_pitch = rm_ctrl.PIDCtrl()
         pid_yaw = rm_ctrl.PIDCtrl()
 
         # Set contoller parameters.
-        pid_pitch.set_ctrl_params(90,0,3)
-        pid_yaw.set_ctrl_params(120,0,5)
+        pid_pitch.set_ctrl_params(PID_PITCH_PARAMETERS[0],
+                PID_PITCH_PARAMETERS[1], PID_PITCH_PARAMETERS[2])
+        pid_yaw.set_ctrl_params(PID_YAW_PARAMETERS[0], PID_YAW_PARAMETERS[1],
+                PID_YAW_PARAMETERS[2])
     
     # Keep track of previous aim status.
     previous_aim_status = AIM_ERROR
