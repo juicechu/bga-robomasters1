@@ -213,13 +213,16 @@ def vision_recognized_car(msg):
     target_recognized(msg, 4)
 
 def target_recognized(msg, num_entries_per_target):
-    # Create PID controllers for pitch and yaw.
-    pid_pitch = rm_ctrl.PIDCtrl()
-    pid_yaw = rm_ctrl.PIDCtrl()
+    pid_pitch = None
+    pid_yaw = None
+    if TARGET_TRACKING_MODE == 0:
+        # Create PID controllers for pitch and yaw.
+        pid_pitch = rm_ctrl.PIDCtrl()
+        pid_yaw = rm_ctrl.PIDCtrl()
 
-    # Set contoller parameters.
-    pid_pitch.set_ctrl_params(90,0,3)
-    pid_yaw.set_ctrl_params(120,0,5)
+        # Set contoller parameters.
+        pid_pitch.set_ctrl_params(90,0,3)
+        pid_yaw.set_ctrl_params(120,0,5)
     
     # Keep track of previous aim status.
     previous_aim_status = AIM_ERROR
