@@ -281,7 +281,7 @@ def target_recognized(msg, num_entries_per_target):
                 led_ctrl.set_top_led(rm_define.armor_top_all, 255, 0, 0,
                     rm_define.effect_marquee)
 
-            if distance_in_meters <= 2.0:
+            if distance_in_meters <= AUTO_FIRE_MAX_DISTANCE:
                 if AUTO_FIRE_ON_LOCK:
 		    print(f'Fire!')
             	    gun_ctrl.fire_once()
