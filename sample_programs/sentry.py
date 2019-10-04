@@ -143,7 +143,7 @@ def DistanceToTarget(height, known_height):
 #
 # Actions that require a target lock should only be done when AIM_DONE is
 # returned.
-def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
+def Aim(dst_x, dst_y, target_tracking_mode, pid_yaw = None, pid_pitch = None):
     if dst_x < 0.0 or dst_x > 1.0 or dst_y < 0.0 or dst_y > 1.0:
         # Invalid dst_x or dst_y.
         return AIM_ERROR
@@ -164,11 +164,22 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
 
     if abs(delta_x) <= 0.1 and abs(delta_y) <= 0.1:
         # We are centered in the target already. There is nothing else to do.
-        if pid_yaw is not None:
-            # We are in PID mode. Stop gimbal rotation that might still be in
+        if target_tracking_mode == 0:
+            # We are in speed mode. Stop gimbal rotation that might still be in
             # progress.
             gimbal_ctrl.rotate_with_speed(0, 0)
+            
         return AIM_DONE
+
+    if target_tracking_mode != 0:
+        # Get current gimbal yaw and pitch angles.
+        gimbal_yaw_angle = gimbal_ctrl.get_axis_angle(rm_define.gimbal_axis_yaw)
+        gimbal_pitch_angle = gimbal_ctrl.get_axis_angle(
+                rm_define.gimbal_axis_pitch)
+
+        # Compute deltas between source and destination angles.
+        delta_x = ROBOT_CAMERA_HORIZONTAL_FOV * (delta_x)
+        delta_y = ROBOT_CAMERA_VERTICAL_FOV * (delta_y)        
 
     if pid_yaw is not None:
         # PID mode.
@@ -177,26 +188,24 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
         pid_yaw.set_error(delta_x)
         pid_pitch.set_error(delta_y)
 
-        # Set gimbal rotation speed based on PID controllers output.
-        gimbal_ctrl.rotate_with_speed(pid_yaw.get_output(),
-                pid_pitch.get_output())
+        if target_tracking_mode == 0:
+            # Set gimbal rotation speed based on PID controllers output.
+            gimbal_ctrl.rotate_with_speed(pid_yaw.get_output(),
+                    pid_pitch.get_output())
+        else:
+            # Move gimbal so the sight points directly to the target.
+            gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + id_yaw.get_output(),
+                gimbal_pitch_angle + pid_pitch.get_output())
     else:
         # Direct mode.
 
-        # Get current gimbal yaw and pitch angles.
-        gimbal_yaw_angle = gimbal_ctrl.get_axis_angle(rm_define.gimbal_axis_yaw)
-        gimbal_pitch_angle = gimbal_ctrl.get_axis_angle(
-                rm_define.gimbal_axis_pitch)
-
-        # Compute deltas between source and destination angles.
-        delta_yaw_angle = ROBOT_CAMERA_HORIZONTAL_FOV * (delta_x)
-        delta_pitch_angle = ROBOT_CAMERA_VERTICAL_FOV * (delta_y)
-
-        print(gimbal_yaw_angle + delta_yaw_angle)
-        
-        # Move gimbal so the sight points directly to the target.
-        gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + delta_yaw_angle,
-                gimbal_pitch_angle + delta_pitch_angle)
+        if target_tracking_mode == 0:
+            # Set gimbal rotation speed based on PID controllers output.
+            gimbal_ctrl.rotate_with_speed(delta_x, delta_y)
+        else:
+            # Move gimbal so the sight points directly to the target.
+            gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + delta_x,
+                    gimbal_pitch_angle + delta_y)
 
     return AIM_IN_PROGRESS
 
@@ -263,7 +272,7 @@ def target_recognized(msg, num_entries_per_target):
         print(f'Closest target is {distance_in_meters:.2f} meters away.')
 
         aim_status = Aim(closest_target_info[0], closest_target_info[1],
-                         pid_yaw, pid_pitch)
+                         TARGET_TRACKING_MODE, pid_yaw, pid_pitch)
         if aim_status == AIM_DONE:
             print('Target locked.')
 
@@ -294,7 +303,8 @@ def target_recognized(msg, num_entries_per_target):
 
         previous_aim_status = aim_status
     
-    gimbal_ctrl.rotate_with_speed(0, 0)
+    # Recenter Gimbal.
+    gimbal_ctrl.recenter() 
 
     # Back to rotating white leds (searching for targets).
     led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
