@@ -32,10 +32,33 @@ PID_YAW_PARAMETERS   = [0, 0, 0]
 # Sentry Mode is enabled.
 CONTROLLER_OVERRIDE = False
 
+# Constants.
+
+# Known height of a Robomaster S1 in millimeters and inches.
+ROBOT_KNOWN_HEIGHT_MM         = 270.0
+VISION_MARKER_KNOWN_HEIGHT_MM = 170.00
+
+# Due to the coordinate system used, the focal length can be inferred directly
+# (you can still compute it yourself using FocalLength() to see it matches).
+ROBOT_CAMERA_FOCAL_LENGTH     = 1.0
+
+# Robomaster S1 camera field of view information.
+ROBOT_CAMERA_HORIZONTAL_FOV   = 96
+ROBOT_CAMERA_VERTICAL_FOV     = 54
+
+# Aim return codes.
+AIM_ERROR                     = 0
+AIM_IN_PROGRESS               = 1
+AIM_DONE                      = 2
+
 # Program entry point. Set up robot and start looking for targets.
 def start():
-    # Enable S1 robot identification.
-    vision_ctrl.enable_detection(rm_define.vision_detection_car)
+    if TARGET_TYPE == 0:
+        # Enable S1 robot identification.
+        vision_ctrl.enable_detection(rm_define.vision_detection_car)
+    else:
+        # Enable vision marker detection.
+        vision_ctrl.enable_detection(rm_define.vision_detection_marker)
 
     # Set reasonable gimbal speed for finding new targets.
     gimbal_ctrl.set_rotate_speed(60)
@@ -89,33 +112,10 @@ def FindClosestTarget(detection_info, num_entries_per_target):
     # Return only the relevant info about the selected target.
     return detection_info[closest_index:closest_index + num_entries_per_target]
 
-# Known height of a Robomaster S1 in millimeters and inches.
-ROBOT_KNOWN_HEIGHT_MM = 270.0
-VISION_MARKER_KNOWN_HEIGHT_MM = 170.00
-
-# Due to the coordinate system used, the focal length can be inferred directly
-# (you can still compute it yourself using FocalLength() to see it matches).
-ROBOT_CAMERA_FOCAL_LENGTH = 1.0
-
-# Returns the distance to the object in the same unit as the given
-# knownHeightOrWidth.
-def Distance(knownHeightOrWidth, focalLength, heightOrWidth):
-    return (knownHeightOrWidth * focalLength) / heightOrWidth
-
-# Compute distance in millimeters to a detected Robomaster S1 given its
-# bounding box height.
-def DistanceToRobotMM(height):
-    return Distance(ROBOT_KNOWN_HEIGHT_MM, ROBOT_CAMERA_FOCAL_LENGTH,
-            height)
-
-# Robomaster S1 camera field of view information.
-ROBOT_CAMERA_HORIZONTAL_FOV = 96
-ROBOT_CAMERA_VERTICAL_FOV   = 54
-
-# Aim return codes.
-AIM_ERROR       = 0
-AIM_IN_PROGRESS = 1
-AIM_DONE        = 2
+# Compute distance in millimeters to a detected target given its bounding box
+# height and known height.
+def DistanceToTarget(height, known_height):
+    return known_height / height
 
 # Aims the Robomaster S1 gimbal to the given coordinates.
 #
@@ -200,7 +200,19 @@ def Aim(dst_x, dst_y, pid_yaw = None, pid_pitch = None):
 
     return AIM_IN_PROGRESS
 
+def vision_recognized_marker_trans_all(msg):
+    target_recognized(msg, 5)
+
+def vision_recognized_marker_number_all(msg):
+    target_recognized(msg, 5)
+
+def vision_recognized_marker_letter_all(msg):
+    target_recognized(msg, 5)
+
 def vision_recognized_car(msg):
+    target_recognized(msg, 4)
+
+def target_recognized(msg, num_entries_per_target):
     # Create PID controllers for pitch and yaw.
     pid_pitch = rm_ctrl.PIDCtrl()
     pid_yaw = rm_ctrl.PIDCtrl()
@@ -213,27 +225,39 @@ def vision_recognized_car(msg):
     previous_aim_status = AIM_ERROR
 
     while True:
-        robot_detection_info = vision_ctrl.get_car_detection_info()
-        if robot_detection_info[0] == 0:
+        target_detection_info = []
+        if TARGET_TYPE == 0:
+            target_detection_info = vision_ctrl.get_car_detection_info()
+        else:
+            target_detection_info = vision_ctrl.get_marker_detection_info()
+
+        if target_detection_info[0] == 0:
             break
 
-        print(f'Seeing {robot_detection_info[0]} robots.')
+        print(f'Seeing {target_detection_info[0]} targets.')
 
-        closest_robot_info = FindClosestTarget(robot_detection_info, 4)
-        if closest_robot_info is None:
-            print(f'Unexpected robot data. Abort tracking.')
+        closest_target_info = FindClosestTarget(target_detection_info,
+                num_entries_per_target)
+        if closest_target_info is None:
+            print(f'Unexpected target data. Abort tracking.')
             break
-            
-        distance = DistanceToRobotMM(closest_robot_info[3])
+
+        distance = 0.0
+        if TARGET_TYPE == 0:
+            distance = DistanceToTarget(closest_target_info[3],
+                    ROBOT_KNOWN_HEIGHT_MM)
+        else:
+            distance = DistanceToTarget(closest_target_info[3],
+                    VISION_MARKER_KNOWN_HEIGHT_MM)
         if distance is None:
             print(f'Can\'t get distance. Abort tracking.')
             break
 
         distance_in_meters = distance / 1000
 
-        print(f'Closest robot is {distance_in_meters:.2f} meters away.')
+        print(f'Closest target is {distance_in_meters:.2f} meters away.')
 
-        aim_status = Aim(closest_robot_info[0], closest_robot_info[1],
+        aim_status = Aim(closest_target_info[0], closest_target_info[1],
                          pid_yaw, pid_pitch)
         if aim_status == AIM_DONE:
             print('Target locked.')
