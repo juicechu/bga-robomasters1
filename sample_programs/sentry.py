@@ -53,6 +53,11 @@ AIM_DONE                      = 2
 
 # Program entry point. Set up robot and start looking for targets.
 def start():
+    if CONTROLLER_OVERRIDE:
+        # Enable controller override.
+        chassis_ctrl.enable_stick_overlay()
+        gimbal_ctrl.enable_stick_overlay()
+
     if TARGET_TYPE == 0:
         # Enable S1 robot identification.
         vision_ctrl.enable_detection(rm_define.vision_detection_car)
