@@ -61,44 +61,33 @@ def start():
             # a target to be identified.
             time.sleep(60)
 
-# Return the bounding box information (X, Y, W, H) for the closest detected
-# robot.
-def FindClosestRobot(robotDetectionInfo):
-    return FindClosest(robotDetectionInfo, 4)
-
-# Simple algorithm to find the closest detected object. It simply iterates
-# through all of the detected objects and returns the one with the bigger
-# height.
+# Simple algorithm to find the closest detected target. It simply iterates
+# through all of them and returns the one with the bigger height.
 #
 # Other than the detection info, it takes as parameter the expected number of
-# items per detected object as it varies for a detected robot or a detected
+# items per detected target as it varies for a detected robot or a detected
 # vision marker, for example.
-def FindClosest(detectionInfo, numEntriesPerObject):
-    numEntries = len(detectionInfo) - 1  # Ignore size entry.
-    numObjects = numEntries // numEntriesPerObject
-    if numObjects != detectionInfo[0]:
+def FindClosestTarget(detection_info, num_entries_per_target):
+    num_entries = len(detection_info) - 1  # Ignore size entry.
+    num_targets = num_entries / num_entries_per_target
+    if num_targets != detectionInfo[0]:
         # Got an unexpected number of entries.
         return None
 
-    modulo = numEntries % numEntriesPerObject
-    if modulo != 0:
-        # Got incomplete number of entries.
-        return None
+    closest_height = 0.0  # Impossible height.
+    closest_index = 1 # Defaults to first Robot detected.
 
-    closestHeight = 0.0  # Impossible height.
-    closestIndex = 1 # Defaults to first Robot detected.
-
-    # Check height of the bounding box of each detected robot. Return the one
+    # Check height of the bounding box of each detected target. Returns the one
     # with the biggest height.
-    for i in range(1, len(detectionInfo) - 1, numEntriesPerObject):
-        objectHeight = detectionInfo[i + numEntriesPerObject - 1]
-        if objectHeight > closestHeight:
+    for i in range(1, len(detection_info) - 1, num_entries_per_target):
+        object_height = detection_info[i + num_entries_per_target - 1]
+        if object_height > closest_height:
             # Found a bigger height.
-            closestHeight = objectHeight
-            closestIndex = i
+            closest_height = object_height
+            closest_index = i
 
-    # Return only the relevant info about the selected object.
-    return detectionInfo[closestIndex:closestIndex + numEntriesPerObject]
+    # Return only the relevant info about the selected target.
+    return detection_info[closest_index:closest_index + num_entries_per_target]
 
 # Known height of a Robomaster S1 in millimeters and inches.
 ROBOT_KNOWN_HEIGHT_MM = 270.0
@@ -230,7 +219,7 @@ def vision_recognized_car(msg):
 
         print(f'Seeing {robot_detection_info[0]} robots.')
 
-        closest_robot_info = FindClosestRobot(robot_detection_info)
+        closest_robot_info = FindClosestTarget(robot_detection_info, 4)
         if closest_robot_info is None:
             print(f'Unexpected robot data. Abort tracking.')
             break
