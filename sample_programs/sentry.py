@@ -48,12 +48,13 @@ def start():
             rm_define.effect_marquee)
 
     if TARGET_SEARCHING:
+        half_arc = TARGET_SEARCH_ANGLE // 2
         while True:
-	    # Sweep from side to side.
+            # Sweep from side to side.
             media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
-            gimbal_ctrl.yaw_ctrl(-90)
+            gimbal_ctrl.yaw_ctrl(-half_arc)
             media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
-            gimbal_ctrl.yaw_ctrl(90)
+            gimbal_ctrl.yaw_ctrl(half_arc)
     else:
         while True:
             # Just sleep as there is nothing to do other than waiting for
