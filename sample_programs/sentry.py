@@ -102,7 +102,7 @@ def FindClosest(detectionInfo, numEntriesPerObject):
 
 # Known height of a Robomaster S1 in millimeters and inches.
 ROBOT_KNOWN_HEIGHT_MM = 270.0
-ROBOT_KNOWN_HEIGHT_IN = 10.6
+VISION_MARKER_KNOWN_HEIGHT_MM = 170.00
 
 # Due to the coordinate system used, the focal length can be inferred directly
 # (you can still compute it yourself using FocalLength() to see it matches).
