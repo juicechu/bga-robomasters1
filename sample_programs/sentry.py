@@ -1,34 +1,36 @@
-# Manual control of firing rate.
-#
-# This allows one to define a firing rate and to also enable simulated fire
-# by using the trajectory light.
-class FireControl:
-    def __init__(self, max_rate_per_second, simulated):
-        self.max_rate_per_second = max_rate_per_second
-        self.simulated = simulated
+# If true, sweep from side to side while looking for targets.
+TARGET_SEARCHING  = True
 
-        self.last_fire = time.time()
+# Angle of sweep (90 means -45 to 45).
+TARGET_SEARCHING_ANGLE = 90
 
-    def fire:
-        delta_time = time.time() - self.last_fire
-        if delta_time < 1 / (self.max_rate_per_second):
-            # We can not fire now.
-            return
+# Type of target to track.
+# 0: Robot
+# 1: Vision Marker
+TARGET_TYPE = 0
 
-        self.last_fire = time.time()
+# Method to use for gimbal movement when tracking.
+# 0: Gimbal speed.
+# 1: Angle to target.
+TARGET_TRACKING_MODE = 0
 
-        media_ctrl.play_sound(rm_define.media_sound_shoot)
+# If true, automatically fire on lock.
+AUTO_FIRE_ON_LOCK = True
 
-        if self.simulated:
-            # Simulate firing with the trajectory light.
-            led_ctrl.gun_on()
-            led_ctrl_gun_off()
-        else:
-            # Fire blaster. 
-            gun_ctrl.fire_once()
+# Maximum distance (in meters) the target must be to be fired upon when
+# AUTO_FIRE_ON_LOCK is enabled.
+AUTO_FIRE_MAX_DISTANCE = 2.0
 
-# Simulated firing at 4 shots per second.
-fire_control = FireControl(4, true)
+# If true, uses PID for gimbal movement.
+PID_ENABLED = True
+
+# PID controller setup ([P, I, D]).
+PID_PITCH_PARAMETERS = [0, 0, 0]
+PID_YAW_PARAMETERS   = [0, 0, 0]
+
+# If true, allows controller override (i.e. manual control) of the Robot when
+# Sentry Mode is enabled.
+CONTROLLER_OVERRIDE = False
 
 # Program entry point. Set up robot and start looking for targets.
 def start():
@@ -247,7 +249,7 @@ def vision_recognized_car(msg):
 
             if distance_in_meters <= 2.0:
 		print(f'Fire!')
-            	fire_control.fire()
+            	gun_ctrl.fire_once()
             else:
                 print(f'Too far. Not firing.')
 
