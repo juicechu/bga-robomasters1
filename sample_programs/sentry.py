@@ -76,7 +76,7 @@ def start():
             rm_define.effect_marquee)
 
     if TARGET_SEARCHING:
-        half_arc = TARGET_SEARCH_ANGLE // 2
+        half_arc = TARGET_SEARCHING_ANGLE // 2
         while True:
             # Sweep from side to side.
             media_ctrl.play_sound(rm_define.media_sound_gimbal_rotate)
@@ -98,7 +98,7 @@ def start():
 def FindClosestTarget(detection_info, num_entries_per_target):
     num_entries = len(detection_info) - 1  # Ignore size entry.
     num_targets = num_entries / num_entries_per_target
-    if num_targets != detectionInfo[0]:
+    if num_targets != detection_info[0]:
         # Got an unexpected number of entries.
         return None
 
@@ -199,7 +199,7 @@ def Aim(dst_x, dst_y, target_tracking_mode, pid_yaw = None, pid_pitch = None):
                     pid_pitch.get_output())
         else:
             # Move gimbal so the sight points directly to the target.
-            gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + id_yaw.get_output(),
+            gimbal_ctrl.angle_ctrl(gimbal_yaw_angle + pid_yaw.get_output(),
                 gimbal_pitch_angle + pid_pitch.get_output())
     else:
         # Direct mode.
@@ -261,7 +261,7 @@ def target_recognized(msg, get_detection_info, num_entries_per_target):
             distance = DistanceToTarget(closest_target_info[3],
                     ROBOT_KNOWN_HEIGHT_MM)
         else:
-            distance = DistanceToTarget(closest_target_info[3],
+            distance = DistanceToTarget(closest_target_info[4],
                     VISION_MARKER_KNOWN_HEIGHT_MM)
         if distance is None:
             print(f'Can\'t get distance. Abort tracking.')
@@ -271,7 +271,11 @@ def target_recognized(msg, get_detection_info, num_entries_per_target):
 
         print(f'Closest target is {distance_in_meters:.2f} meters away.')
 
-        aim_status = Aim(closest_target_info[0], closest_target_info[1],
+        offset = 0
+        if num_entries_per_target > 4:
+            offset = num_entries_per_target - 4
+
+        aim_status = Aim(closest_target_info[offset], closest_target_info[offset + 1],
                          TARGET_TRACKING_MODE, pid_yaw, pid_pitch)
         if aim_status == AIM_DONE:
             print('Target locked.')
