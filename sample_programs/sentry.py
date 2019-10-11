@@ -53,6 +53,9 @@ AIM_DONE                      = 2
 
 # Program entry point. Set up robot and start looking for targets.
 def start():
+    # Control Gimbal (and chassis follows it).
+    robot.set_mode(rm_define.robot_mode_chassis_follow)
+
     if CONTROLLER_OVERRIDE:
         # Enable controller override.
         chassis_ctrl.enable_stick_overlay()
@@ -67,9 +70,6 @@ def start():
 
     # Set reasonable gimbal speed for finding new targets.
     gimbal_ctrl.set_rotate_speed(60)
-
-    # Move gimbal and chassis independently.
-    robot_ctrl.set_mode(rm_define.robot_mode_free)
 
     # Rotating white leds (searching for targets).
     led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
@@ -287,8 +287,8 @@ def target_recognized(msg, get_detection_info, num_entries_per_target):
 
             if distance_in_meters <= AUTO_FIRE_MAX_DISTANCE:
                 if AUTO_FIRE_ON_LOCK:
-		    print(f'Fire!')
-            	    gun_ctrl.fire_once()
+                    print(f'Fire!')
+                    gun_ctrl.fire_once()
             else:
                 print(f'Too far. Not firing.')
 
@@ -301,7 +301,7 @@ def target_recognized(msg, get_detection_info, num_entries_per_target):
                     led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 0,
                         rm_define.effect_marquee)
 
-		# Give some time for the gimbal position to stabilize as
+                # Give some time for the gimbal position to stabilize as
                 # otherwise we might get bogus target position data.
                 time.sleep(0.1)
 

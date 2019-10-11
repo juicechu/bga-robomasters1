@@ -17,6 +17,7 @@ AIM_ERROR                     = 0
 AIM_IN_PROGRESS               = 1
 AIM_DONE                      = 2
 def start():
+    robot.set_mode(rm_define.robot_mode_chassis_follow)
     if CONTROLLER_OVERRIDE:
         chassis_ctrl.enable_stick_overlay()
         gimbal_ctrl.enable_stick_overlay()
@@ -25,7 +26,6 @@ def start():
     else:
         vision_ctrl.enable_detection(rm_define.vision_detection_marker)
     gimbal_ctrl.set_rotate_speed(60)
-    robot_ctrl.set_mode(rm_define.robot_mode_free)
     led_ctrl.set_top_led(rm_define.armor_top_all, 255, 255, 255,
             rm_define.effect_marquee)
     if TARGET_SEARCHING:
@@ -145,8 +145,8 @@ def target_recognized(msg, get_detection_info, num_entries_per_target):
                     rm_define.effect_marquee)
             if distance_in_meters <= AUTO_FIRE_MAX_DISTANCE:
                 if AUTO_FIRE_ON_LOCK:
-		    print(f'Fire!')
-            	    gun_ctrl.fire_once()
+                    print(f'Fire!')
+                    gun_ctrl.fire_once()
             else:
                 print(f'Too far. Not firing.')
         else:
