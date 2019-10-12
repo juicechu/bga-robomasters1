@@ -54,7 +54,7 @@ AIM_DONE                      = 2
 # Program entry point. Set up robot and start looking for targets.
 def start():
     # Control Gimbal (and chassis follows it).
-    robot.set_mode(rm_define.robot_mode_chassis_follow)
+    robot_ctrl.set_mode(rm_define.robot_mode_chassis_follow)
 
     if CONTROLLER_OVERRIDE:
         # Enable controller override.
@@ -229,7 +229,7 @@ def vision_recognized_car(msg):
 def target_recognized(msg, get_detection_info, num_entries_per_target):
     pid_pitch = None
     pid_yaw = None
-    if PID_ENABLED == 0:
+    if PID_ENABLED:
         # Create PID controllers for pitch and yaw.
         pid_pitch = rm_ctrl.PIDCtrl()
         pid_yaw = rm_ctrl.PIDCtrl()
