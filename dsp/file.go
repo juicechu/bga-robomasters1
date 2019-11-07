@@ -51,10 +51,9 @@ func New(creator, title, pythonCode string) (*File, error) {
 	f := &File{
 		internal.Dji{
 			Attribute: internal.Attribute{
-				Creator:      trimmedCreator,
-				CreationDate: now.Format("2006/01/02"),
-				ModifyTime: now.Format(
-					"01/02/2006 15:04:05 MST"),
+				Creator:                   trimmedCreator,
+				CreationDate:              now.Format("2006/01/02"),
+				ModifyTime:                "",
 				FirmwareVersionDependency: "00.00.0000",
 				Title:                     trimmedTitle,
 				Guid:                      computeGuid(),
@@ -62,7 +61,6 @@ func New(creator, title, pythonCode string) (*File, error) {
 				AppMinVersion:             "",
 				AppMaxVersion:             "",
 				Sign:                      "",
-				// To be signed after construction.
 			},
 			Code: internal.Code{
 				PythonCode: internal.Cdata{
@@ -74,8 +72,6 @@ func New(creator, title, pythonCode string) (*File, error) {
 			},
 		},
 	}
-
-	f.computeSignature()
 
 	return f, nil
 }
@@ -104,6 +100,12 @@ func (f *File) Save(fileName string) error {
 		return err
 	}
 	defer fd.Close()
+
+	// Set modified time.
+	now := time.Now()
+	f.dji.Attribute.ModiFyTime = now.Format("01/02/2006 15:04:05 MST")
+
+	f.computeSignature()
 
 	xmlData, err := xml.Marshal(f.dji)
 	if err != nil {
