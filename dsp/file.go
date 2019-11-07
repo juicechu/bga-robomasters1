@@ -6,8 +6,11 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
+	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/dsp/internal"
 )
@@ -22,6 +25,59 @@ var (
 // used to create, read, modify or write them.
 type File struct {
 	dji internal.Dji
+}
+
+// New creates a new File instance with the given creator, title and pythonCode.
+// Returns a pointer to a File instance and a nil error on success or nil and a
+// non-nil error on failure.
+func New(creator, title, pythonCode string) (*File, error) {
+	trimmedCreator := strings.TrimSpace(creator)
+	if len(trimmedCreator) == 0 {
+		return nil, fmt.Errorf("creator can not be empty")
+	}
+
+	trimmedTitle := strings.TrimSpace(title)
+	if len(trimmedTitle) == 0 {
+		return nil, fmt.Errorf("title can not be empty")
+	}
+
+	trimmedPythonCode := strings.TrimSpace(pythonCode)
+	if len(trimmedCreator) == 0 {
+		return nil, fmt.Errorf("pythonCode can not be empty")
+	}
+
+	now := time.Now()
+
+	f := &File{
+		internal.Dji{
+			Attribute: internal.Attribute{
+				Creator:      trimmedCreator,
+				CreationDate: now.Format("2006/01/02"),
+				ModifyTime: now.Format(
+					"01/02/2006 15:04:05 MST"),
+				FirmwareVersionDependency: "00.00.0000",
+				Title:                     trimmedTitle,
+				Guid:                      computeGuid(),
+				CodeType:                  "python",
+				AppMinVersion:             "",
+				AppMaxVersion:             "",
+				Sign:                      "",
+				// To be signed after construction.
+			},
+			Code: internal.Code{
+				PythonCode: internal.Cdata{
+					Cdata: trimmedPythonCode,
+				},
+				ScratchDescription: internal.Cdata{
+					Cdata: "",
+				},
+			},
+		},
+	}
+
+	f.computeSignature()
+
+	return f, nil
 }
 
 // Load loads a RoboMaster S1 program file (.dsp) from disk. Returns a pointer
@@ -65,6 +121,16 @@ func (f *File) Save(fileName string) error {
 	}
 
 	return nil
+}
+
+func (f *File) computeSignature() {
+	// TODO(bga): Actually compute signature.
+	f.dji.Attribute.Sign = "signature"
+}
+
+func computeGuid() string {
+	// TODO(bga): Do something reasonable.
+	return "guid"
 }
 
 func decodeDsp(fileName string) ([]byte, error) {
