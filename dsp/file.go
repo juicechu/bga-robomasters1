@@ -27,10 +27,17 @@ type File struct {
 	dji internal.Dji
 }
 
-// New creates a new File instance with the given creator, title and pythonCode.
-// Returns a pointer to a File instance and a nil error on success or nil and a
-// non-nil error on failure.
-func New(creator, title, pythonCode string) (*File, error) {
+// New creates a new File instance with the given creator and title. Returns a
+// pointer to a File instance and a nil error on success or nil and a non-nil
+// error on failure.
+func New(creator, title string) (*File, error) {
+	return NewWithPythonCode(creator, title, "")
+}
+
+// NewWithPythonCode creates a new File instance with the given creator, title
+// and pythonCode. Returns a pointer to a File instance and a nil error on
+// success or nil and a non-nil error on failure.
+func NewWithPythonCode(creator, title, pythonCode string) (*File, error) {
 	trimmedCreator := strings.TrimSpace(creator)
 	if len(trimmedCreator) == 0 {
 		return nil, fmt.Errorf("creator can not be empty")
