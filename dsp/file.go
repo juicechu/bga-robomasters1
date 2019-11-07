@@ -42,9 +42,6 @@ func New(creator, title, pythonCode string) (*File, error) {
 	}
 
 	trimmedPythonCode := strings.TrimSpace(pythonCode)
-	if len(trimmedCreator) == 0 {
-		return nil, fmt.Errorf("pythonCode can not be empty")
-	}
 
 	now := time.Now()
 
@@ -89,6 +86,11 @@ func Load(fileName string) (*File, error) {
 	err = xml.Unmarshal(xmlData, &f.dji)
 
 	return &f, nil
+}
+
+// SetPythonCode associates the given pythonCode with the File.
+func (f *File) SetPythonCode(pythonCode string) {
+	f.dji.Code.PythonCode.Cdata = strings.TrimSpace(pythonCode)
 }
 
 // Save serializes and saves the File instance to disk as an encrypted
