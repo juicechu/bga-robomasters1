@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	// Extacted from DJI's RoboMaster S1 app.
+	// Extracted from DJI's RoboMaster S1 app.
 	dspKey = []byte("TRoP4GWuc30k6WUp")
 	dspIv  = []byte("bP3crVEO6wABzOc0")
 )
@@ -98,6 +98,11 @@ func Load(fileName string) (*File, error) {
 // SetPythonCode associates the given pythonCode with the given File.
 func (f *File) SetPythonCode(pythonCode string) {
 	f.dji.Code.PythonCode.Cdata = strings.TrimSpace(pythonCode)
+}
+
+// PythonCode returns the Python code associated with the given File.
+func (f *File) PythonCode() string {
+	return f.dji.Code.PythonCode.Cdata
 }
 
 // Save serializes and saves the File instance to disk as an encrypted
