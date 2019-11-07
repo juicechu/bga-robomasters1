@@ -95,7 +95,7 @@ func Load(fileName string) (*File, error) {
 	return &f, nil
 }
 
-// SetPythonCode associates the given pythonCode with the File.
+// SetPythonCode associates the given pythonCode with the given File.
 func (f *File) SetPythonCode(pythonCode string) {
 	f.dji.Code.PythonCode.Cdata = strings.TrimSpace(pythonCode)
 }
