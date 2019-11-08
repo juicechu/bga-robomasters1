@@ -142,7 +142,7 @@ func (f *File) Save(fileName string) error {
 }
 
 func (f *File) computeSignature() {
-	text := fmt.Sprintf("%s%s%s%s%s%s%s%s%s",
+	md5Source := []byte(fmt.Sprintf("%s%s%s%s%s%s%s%s%s",
 		dspMKey,
 		f.dji.Attribute.CreationDate,
 		f.dji.Attribute.Title,
@@ -151,11 +151,21 @@ func (f *File) computeSignature() {
 		f.dji.Attribute.Guid,
 		f.dji.Code.PythonCode.Cdata,
 		f.dji.Code.ScratchDescription.Cdata,
-		f.dji.Attribute.CodeType)
+		// In the original C# code, this was an entry in an enum. When
+		// concatenating it to a string, C# actually uses the name of
+		// the enum instead of its value. The enum names use title case
+		// while the actual value we keep track of is lowercase.
+		strings.ToTitle(f.dji.Attribute.CodeType)))
 
-	sum := md5.Sum([]byte(text))
+	sum := md5.Sum(md5Source)
 
-	f.dji.Attribute.Sign = fmt.Sprintf("%x", sum)
+	// MD5 sum is 16 bytes. The actual signature is an interval of the
+	// signature after it is converted to string. It goes as far as to
+	// having "half a byte" at the start and end (ie, the interval starts
+	// and ends at "half byte" boundaries).
+	fullSignature := fmt.Sprintf("%x", sum)
+
+	f.dji.Attribute.Sign = fullSignature[7:23]
 }
 
 func computeGuid() string {
