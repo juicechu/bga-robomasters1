@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -17,8 +18,9 @@ import (
 
 var (
 	// Extracted from DJI's RoboMaster S1 app.
-	dspKey = []byte("TRoP4GWuc30k6WUp")
-	dspIv  = []byte("bP3crVEO6wABzOc0")
+	dspKey  = []byte("TRoP4GWuc30k6WUp")
+	dspIv   = []byte("bP3crVEO6wABzOc0")
+	dspMKey = "wwxnMmF8"
 )
 
 // File is the representation of a RoboMaster S1 program file (.dsp). It can be
@@ -140,8 +142,20 @@ func (f *File) Save(fileName string) error {
 }
 
 func (f *File) computeSignature() {
-	// TODO(bga): Actually compute signature.
-	f.dji.Attribute.Sign = "signature"
+	text := fmt.Sprintf("%s%s%s%s%s%s%s%s%s",
+		dspMKey,
+		f.dji.Attribute.CreationDate,
+		f.dji.Attribute.Title,
+		f.dji.Attribute.Creator,
+		f.dji.Attribute.FirmwareVersionDependency,
+		f.dji.Attribute.Guid,
+		f.dji.Code.PythonCode.Cdata,
+		f.dji.Code.ScratchDescription.Cdata,
+		f.dji.Attribute.CodeType)
+
+	sum := md5.Sum([]byte(text))
+
+	f.dji.Attribute.Sign = fmt.Sprintf("%x", sum)
 }
 
 func computeGuid() string {
