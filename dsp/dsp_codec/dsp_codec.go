@@ -22,7 +22,7 @@ func main() {
 			os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprintf(flag.CommandLine.Output(),
-			"filename must be end in .dsp or .py")
+			"filename must be end in .dsp or .py\n\n")
 	}
 
 	flag.Parse()
