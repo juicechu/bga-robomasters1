@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/dsp/internal"
+	"github.com/google/uuid"
 )
 
 var (
@@ -169,8 +170,13 @@ func (f *File) computeSignature() {
 }
 
 func computeGuid() string {
-	// TODO(bga): Do something reasonable.
-	return "guid"
+	u, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	// Return the computed Guid without the dashes.
+	return strings.ReplaceAll(u.String(), "-", "")
 }
 
 func decodeDsp(fileName string) ([]byte, error) {
