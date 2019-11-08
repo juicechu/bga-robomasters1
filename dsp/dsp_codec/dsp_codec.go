@@ -63,8 +63,6 @@ func writePythonFile(baseFileName, extension string) error {
 		return err
 	}
 
-	f.Dump()
-
 	fd, err := os.OpenFile(baseFileName+".py", os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
