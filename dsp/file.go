@@ -155,7 +155,7 @@ func (f *File) computeSignature() {
 		// concatenating it to a string, C# actually uses the name of
 		// the enum instead of its value. The enum names use title case
 		// while the actual value we keep track of is lowercase.
-		strings.ToTitle(f.dji.Attribute.CodeType)))
+		strings.Title(f.dji.Attribute.CodeType)))
 
 	sum := md5.Sum(md5Source)
 
