@@ -109,7 +109,7 @@ func (f *File) PythonCode() string {
 // RoboMaster S1 program file (.dsp). Returns a nil error on success or a
 // non-nil error on failure.
 func (f *File) Save(fileName string) error {
-	fd, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0755)
+	fd, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
