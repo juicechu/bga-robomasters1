@@ -58,7 +58,7 @@ func main() {
 }
 
 func writePythonFile(baseFileName, extension string) error {
-	f, err := dsp.Load(baseFileName + "." + extension)
+	f, err := dsp.Load(baseFileName + extension)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func writePythonFile(baseFileName, extension string) error {
 }
 
 func writeDspFile(baseFileName, extension string) error {
-	fd, err := os.Open(baseFileName + "." + extension)
+	fd, err := os.Open(baseFileName + extension)
 	if err != nil {
 		return err
 	}
