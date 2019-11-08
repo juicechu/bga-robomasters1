@@ -92,6 +92,8 @@ func Load(fileName string) (*File, error) {
 		return nil, err
 	}
 
+	fmt.Println(string(xmlData))
+
 	var f File
 	err = xml.Unmarshal(xmlData, &f.dji)
 
