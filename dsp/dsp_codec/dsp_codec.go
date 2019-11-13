@@ -14,6 +14,7 @@ import (
 var (
 	creator = flag.String("creator", "Anonymous", "program creator")
 	title   = flag.String("title", "Untitled", "program title")
+	raw     = flag.Bool("raw", false, "read/write raw file")
 )
 
 func main() {
@@ -22,7 +23,8 @@ func main() {
 			os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprintf(flag.CommandLine.Output(),
-			"\nfilename must end in .dsp or .py\n\n")
+			"\nfilename must end in .dsp or .py (unless -raw is "+
+				"set)\n\n")
 	}
 
 	flag.Parse()
@@ -37,13 +39,22 @@ func main() {
 	isDsp := strings.HasSuffix(strings.ToLower(fileName), ".dsp")
 	isPy := strings.HasSuffix(strings.ToLower(fileName), ".py")
 
+	extension := filepath.Ext(fileName)
+	baseFileName := strings.TrimSuffix(fileName, extension)
+
+	if *raw {
+		err := writeRawOrDspFile(baseFileName, extension, isDsp)
+		if err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
 	if !isDsp && !isPy {
 		flag.Usage()
 		os.Exit(2)
 	}
-
-	extension := filepath.Ext(fileName)
-	baseFileName := strings.TrimSuffix(fileName, extension)
 
 	var err error
 	if isDsp {
@@ -54,6 +65,24 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+}
+
+func writeRawOrDspFile(baseFileName, extension string, isDsp bool) error {
+	if isDsp {
+		data, err := dsp.UnwrapData(baseFileName + extension)
+		if err != nil {
+			return err
+		}
+
+		return ioutil.WriteFile(baseFileName+".raw", data, 0644)
+	} else {
+		data, err := dsp.WrapData(baseFileName + extension)
+		if err != nil {
+			return err
+		}
+
+		return ioutil.WriteFile(baseFileName+".dsp", data, 0644)
 	}
 }
 
