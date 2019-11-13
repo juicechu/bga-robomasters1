@@ -141,7 +141,7 @@ func (f *File) Save(path string) error {
 
 	// Set modified time.
 	now := time.Now()
-	f.dji.Attribute.ModifyTime = now.Format("01/02/2006 15:04:05 MST")
+	f.dji.Attribute.ModifyTime = now.Format("01/02/2006 15:04:05")
 
 	f.computeSignature()
 
