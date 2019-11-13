@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,7 +28,8 @@ var (
 // File is the representation of a RoboMaster S1 program file (.dsp). It can be
 // used to create, read, modify or write them.
 type File struct {
-	dji internal.Dji
+	fileName string // Base file name (no guid).
+	dji      internal.Dji
 }
 
 // New creates a new File instance with the given creator and title. Returns a
@@ -56,6 +58,7 @@ func NewWithPythonCode(creator, title, pythonCode string) (*File, error) {
 	now := time.Now()
 
 	f := &File{
+		strings.ReplaceAll(title, " ", "-"),
 		internal.Dji{
 			Attribute: internal.Attribute{
 				Creator:                   trimmedCreator,
@@ -94,6 +97,21 @@ func Load(fileName string) (*File, error) {
 
 	var f File
 	err = xml.Unmarshal(xmlData, &f.dji)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove extension (if there is one).
+	baseFileName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+
+	// Remove guid from fileName if present.
+	guidIndex := strings.Index(strings.ToLower(baseFileName),
+		strings.ToLower(f.dji.Attribute.Guid))
+	if guidIndex != -1 {
+		baseFileName = baseFileName[0:guidIndex]
+	}
+
+	f.fileName = baseFileName
 
 	return &f, nil
 }
@@ -108,10 +126,13 @@ func (f *File) PythonCode() string {
 	return f.dji.Code.PythonCode.Cdata
 }
 
-// Save serializes and saves the File instance to disk as an encrypted
-// RoboMaster S1 program file (.dsp). Returns a nil error on success or a
-// non-nil error on failure.
-func (f *File) Save(fileName string) error {
+// Save serializes and saves the File instance to disk at the given path as an
+// encrypted RoboMaster S1 program file (.dsp). Returns a nil error on success
+// or a non-nil error on failure.
+func (f *File) Save(path string) error {
+	// Generate final filename. i.e: /path/filenameguid.dsp
+	fileName := filepath.Join(path, f.fileName+f.dji.Attribute.Guid+
+		".dsp")
 	fd, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
