@@ -23,8 +23,8 @@ type Attribute struct {
 	// Currently empty.
 	AppMinVersion string `xml:"app_min_version"`
 
-	// Currently not present in resulting XML.
-	AppMaxVersion string `xml:"app_max_version,omitempty"`
+	// Currently empty.
+	AppMaxVersion string `xml:"app_max_version"`
 
 	// Currently not checked, but we know how to compute.
 	Sign string `xml:"sign"`
