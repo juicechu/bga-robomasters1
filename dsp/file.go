@@ -53,8 +53,6 @@ func NewWithPythonCode(creator, title, pythonCode string) (*File, error) {
 		return nil, fmt.Errorf("title can not be empty")
 	}
 
-	trimmedPythonCode := strings.TrimSpace(pythonCode)
-
 	now := time.Now()
 
 	f := &File{
@@ -74,7 +72,7 @@ func NewWithPythonCode(creator, title, pythonCode string) (*File, error) {
 			},
 			Code: internal.Code{
 				PythonCode: internal.Cdata{
-					Cdata: trimmedPythonCode,
+					Cdata: pythonCode,
 				},
 				ScratchDescription: internal.Cdata{
 					Cdata: "",
