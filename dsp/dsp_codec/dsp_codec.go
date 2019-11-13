@@ -94,7 +94,7 @@ func writeDspFile(baseFileName, extension string) error {
 		return err
 	}
 
-	err = f.Save(baseFileName + ".dsp")
+	err = f.Save(filepath.Dir(baseFileName))
 	if err != nil {
 		return err
 	}
