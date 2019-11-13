@@ -198,6 +198,49 @@ func computeGuid() string {
 	return strings.ReplaceAll(u.String(), "-", "")
 }
 
+// pkcs7Pad right-pads the given byte slice with 1 to n bytes, where
+// n is the block size. The size of the result is x times n, where x
+// is at least 1.
+func pkcs7Pad(b []byte, blocksize int) ([]byte, error) {
+	if blocksize <= 0 {
+		return nil, fmt.Errorf("invalid block size")
+	}
+	if b == nil || len(b) == 0 {
+		return nil, fmt.Errorf("invalid pkcs7 data")
+	}
+	n := blocksize - (len(b) % blocksize)
+	pb := make([]byte, len(b)+n)
+	copy(pb, b)
+	copy(pb[len(b):], bytes.Repeat([]byte{byte(n)}, n))
+	return pb, nil
+}
+
+// pkcs7Unpad validates and unpads data from the given bytes slice.
+// The returned value will be 1 to n bytes smaller depending on the
+// amount of padding, where n is the block size.
+func pkcs7Unpad(b []byte, blocksize int) ([]byte, error) {
+	if blocksize <= 0 {
+		return nil, fmt.Errorf("invalid block size")
+	}
+	if b == nil || len(b) == 0 {
+		return nil, fmt.Errorf("invalid pkcs7 data")
+	}
+	if len(b)%blocksize != 0 {
+		return nil, fmt.Errorf("invalid pkcs7 padding")
+	}
+	c := b[len(b)-1]
+	n := int(c)
+	if n == 0 || n > len(b) {
+		return nil, fmt.Errorf("invalid pkcs7 padding")
+	}
+	for i := 0; i < n; i++ {
+		if b[len(b)-n+i] != c {
+			return nil, fmt.Errorf("invalid pkcs7 padding")
+		}
+	}
+	return b[:len(b)-n], nil
+}
+
 func decodeDsp(fileName string) ([]byte, error) {
 	fd, err := os.Open(fileName)
 	if err != nil {
@@ -220,15 +263,18 @@ func decodeDsp(fileName string) ([]byte, error) {
 	cbc := cipher.NewCBCDecrypter(block, dspIv)
 	cbc.CryptBlocks(cipherText, cipherText)
 
-	return cipherText, nil
+	plainText, err := pkcs7Unpad(cipherText, aes.BlockSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return plainText, nil
 }
 
 func encodeDsp(plainText []byte) ([]byte, error) {
-	extraBytes := len(plainText) % aes.BlockSize
-	if extraBytes != 0 {
-		paddingBytes := aes.BlockSize - extraBytes
-		padding := []byte(bytes.Repeat([]byte{' '}, paddingBytes))
-		plainText = append(plainText, padding...)
+	newPlainText, err := pkcs7Pad(plainText, aes.BlockSize)
+	if err != nil {
+		return nil, err
 	}
 
 	block, err := aes.NewCipher(dspKey)
@@ -238,8 +284,8 @@ func encodeDsp(plainText []byte) ([]byte, error) {
 
 	cbc := cipher.NewCBCEncrypter(block, dspIv)
 
-	cipherText := make([]byte, len(plainText))
-	cbc.CryptBlocks(cipherText, plainText)
+	cipherText := make([]byte, len(newPlainText))
+	cbc.CryptBlocks(cipherText, newPlainText)
 
 	base64Enc := base64.StdEncoding
 
