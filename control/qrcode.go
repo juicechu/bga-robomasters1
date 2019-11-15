@@ -27,7 +27,7 @@ func NewQRCode(ssid, password string, appId uint64) (*QRCode, error) {
 }
 
 func (q *QRCode) Show() error {
-	pngData, err := qrcode.Encode(q.message, qrcode.Medium, 256)
+	pngData, err := qrcode.Encode(q.message, qrcode.High, 512)
 	if err != nil {
 		return err
 	}
