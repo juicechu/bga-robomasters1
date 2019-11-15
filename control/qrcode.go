@@ -6,8 +6,9 @@ import (
 	"encoding/binary"
 	"io/ioutil"
 
+	"github.com/skratchdot/open-golang/open"
+
 	qrcode "github.com/skip2/go-qrcode"
-	open "github.com/skratchdot/open-golang"
 )
 
 type QRCode struct {
@@ -36,9 +37,9 @@ func (q *QRCode) Show() error {
 		return err
 	}
 
-	fileName = f.Name()
+	fileName := f.Name()
 
-	_, err := f.Write(pngData)
+	_, err = f.Write(pngData)
 	f.Close()
 	if err != nil {
 		return err
