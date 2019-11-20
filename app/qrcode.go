@@ -1,17 +1,12 @@
-package control
+package app
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"strings"
-
-	"github.com/skratchdot/open-golang/open"
-
-	qrcode "github.com/skip2/go-qrcode"
 )
 
 type QRCode struct {
@@ -22,7 +17,8 @@ type QRCode struct {
 	bssId       *net.HardwareAddr
 }
 
-func NewQRCode(appId uint64, countryCode, ssId, password, bssId string) (*QRCode, error) {
+func NewQRCode(appId uint64,
+	countryCode, ssId, password, bssId string) (*QRCode, error) {
 	trimmedCountryCode := strings.TrimSpace(countryCode)
 	if len(trimmedCountryCode) != 2 {
 		return nil, fmt.Errorf("country code must be 2 characters")
@@ -45,7 +41,8 @@ func NewQRCode(appId uint64, countryCode, ssId, password, bssId string) (*QRCode
 			return nil, err
 		}
 		if len(parsedBssId) != 6 {
-			return nil, fmt.Errorf("BSSID must have exactly 6 octets")
+			return nil, fmt.Errorf(
+				"BSSID must have exactly 6 octets")
 		}
 
 		resultBssId = &parsedBssId
@@ -95,30 +92,9 @@ func (q *QRCode) EncodedMessage() string {
 }
 
 func (q *QRCode) String() string {
-	return fmt.Sprintf("App Id : %d, Country Code : %q, SSID : %q, Password : %q, BSSID : %q",
-		q.appId, q.countryCode, q.ssId, q.password, q.bssId)
-}
-
-func (q *QRCode) Show() error {
-	pngData, err := qrcode.Encode(q.encodeQRCodeMessage(), qrcode.High, 512)
-	if err != nil {
-		return err
-	}
-
-	f, err := ioutil.TempFile("", "qrcode-*.png")
-	if err != nil {
-		return err
-	}
-
-	fileName := f.Name()
-
-	_, err = f.Write(pngData)
-	f.Close()
-	if err != nil {
-		return err
-	}
-
-	return open.Run(fileName)
+	return fmt.Sprintf("App Id : %d, Country Code : %q, SSID : %q, "+
+		"Password : %q, BSSID : %q", q.appId, q.countryCode, q.ssId,
+		q.password, q.bssId)
 }
 
 func (q *QRCode) encodeQRCodeMessage() string {
@@ -184,7 +160,8 @@ func (q *QRCode) decodeQRCodeMessage(message string) error {
 	q.password = string(data[12+lenSsId : 12+lenSsId+lenPassword])
 
 	if hasBssId != 0 {
-		parsedBssId, err := net.ParseMAC(string(data[12+lenSsId+lenPassword : 12+lenSsId+lenPassword+12]))
+		parsedBssId, err := net.ParseMAC(
+			string(data[12+lenSsId+lenPassword : 12+lenSsId+lenPassword+12]))
 		if err != nil {
 			return err
 		}
