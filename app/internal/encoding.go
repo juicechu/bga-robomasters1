@@ -1,4 +1,4 @@
-package app
+package internal
 
 func inPlaceEncodeDecode(data []byte) {
 	b := byte(7)
