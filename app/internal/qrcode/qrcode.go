@@ -1,4 +1,4 @@
-package internal
+package qrcode
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"git.bug-br.org.br/bga/robomasters1/app/internal/support"
 )
 
 type QRCode struct {
@@ -132,7 +134,7 @@ func (q *QRCode) encodeQRCodeMessage() string {
 	}
 
 	data := b.Bytes()
-	inPlaceEncodeDecode(data)
+	support.InPlaceEncodeDecode(data)
 
 	return base64.StdEncoding.EncodeToString(data)
 }
@@ -143,7 +145,7 @@ func (q *QRCode) decodeQRCodeMessage(message string) error {
 		return err
 	}
 
-	inPlaceEncodeDecode(data)
+	support.InPlaceEncodeDecode(data)
 
 	metadata := binary.LittleEndian.Uint16(data)
 

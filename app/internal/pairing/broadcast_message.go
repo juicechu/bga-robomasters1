@@ -1,10 +1,12 @@
-package internal
+package pairing
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
+
+	"git.bug-br.org.br/bga/robomasters1/app/internal/support"
 )
 
 var (
@@ -34,7 +36,7 @@ func ParseBroadcastMessageData(data []byte) (*BroadcastMessage, error) {
 	}
 
 	// Decode incoming data.
-	inPlaceEncodeDecode(data)
+	support.InPlaceEncodeDecode(data)
 
 	if !bytes.HasPrefix(data, broadcastMessageHeader) {
 		return nil, fmt.Errorf("invalid broadcast message header")

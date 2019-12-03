@@ -4,15 +4,16 @@ import (
 	"encoding/binary"
 	"io/ioutil"
 
-	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 	"github.com/skratchdot/open-golang/open"
+
+	internalqrcode "git.bug-br.org.br/bga/robomasters1/app/internal/qrcode"
 )
 
 type App struct {
 	id  uint64
-	qrc *internal.QRCode
+	qrc *internalqrcode.QRCode
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -21,7 +22,7 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 		return nil, err
 	}
 
-	qrc, err := internal.NewQRCode(appId, countryCode, ssId, password,
+	qrc, err := internalqrcode.NewQRCode(appId, countryCode, ssId, password,
 		bssId)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,8 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 }
 
 func (a *App) ShowQRCode() error {
-	pngData, err := qrcode.Encode(a.qrc.EncodedMessage(), qrcode.High, 512)
+	pngData, err := qrcode.Encode(a.qrc.EncodedMessage(), qrcode.Medium,
+		256)
 	if err != nil {
 		return err
 	}
