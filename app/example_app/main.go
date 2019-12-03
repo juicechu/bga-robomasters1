@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	err = a.ShowQRCode()
+	err = a.Start()
 	if err != nil {
 		panic(err)
 	}
