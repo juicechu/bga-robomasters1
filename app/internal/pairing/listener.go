@@ -1,6 +1,7 @@
 package pairing
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"sync"
@@ -85,6 +86,24 @@ func (l *Listener) Stop() error {
 	return nil
 }
 
+func (l *Listener) sendACK(ip net.IP) error {
+	buffer := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buffer, l.appId)
+
+	clientAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip.String(),
+		listenerClientPort))
+	if err != nil {
+		return fmt.Errorf("error resolving client address: %w", err)
+	}
+
+	_, err = l.packetConn.WriteTo(buffer, clientAddr)
+	if err != nil {
+		return fmt.Errorf("error sending client ack: %w", err)
+	}
+
+	return nil
+}
+
 func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 	bm, err := ParseBroadcastMessageData(buffer)
 	if err != nil {
@@ -94,15 +113,20 @@ func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	ipString := addr.(*net.UDPAddr).String()
-	if l.clientMap[ipString] {
+	ip := addr.(*net.UDPAddr).IP
+	if l.clientMap[ip.String()] {
 		if bm.AppId() != l.appId {
-			l.clientMap[ipString] = false
+			l.clientMap[ip.String()] = false
 			return NewEvent(EventRemove, bm.SourceIp(), bm.SourceMac())
 		}
 	} else {
 		if bm.IsPairing() && bm.AppId() == l.appId {
-			l.clientMap[ipString] = true
+			err = l.sendACK(ip)
+			if err != nil {
+				return nil
+			}
+
+			l.clientMap[ip.String()] = true
 			return NewEvent(EventAdd, bm.SourceIp(), bm.SourceMac())
 		}
 	}
