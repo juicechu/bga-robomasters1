@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io/ioutil"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 	"github.com/skratchdot/open-golang/open"
@@ -14,6 +15,7 @@ import (
 type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
+	pl  *pairing.Listener
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -31,10 +33,36 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 	return &App{
 		appId,
 		qrc,
+		pairing.NewListener(appId),
 	}, nil
 }
 
-func (a *App) ShowQRCode() error {
+func (a *App) Start() error {
+	err := a.showQRCode()
+	if err != nil {
+		return fmt.Errorf("error showing QR code: %w", err)
+	}
+
+	eventChan, err := a.pl.Start()
+	if err != nil {
+		return fmt.Errorf("error starting pairing listener: %w", err)
+	}
+
+L:
+	for {
+		select {
+		case event, ok := <-eventChan:
+			if !ok {
+				break L
+			}
+
+			// TODO(bga): Do something meaningful.
+			fmt.Printf("%#+v\n", *event)
+		}
+	}
+}
+
+func (a *App) showQRCode() error {
 	pngData, err := qrcode.Encode(a.qrc.EncodedMessage(), qrcode.Medium,
 		256)
 	if err != nil {
