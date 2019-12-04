@@ -16,3 +16,16 @@ func TestParseQRCodeMessage(t *testing.T) {
 		t.Fatalf("expected %q, got %q", expected, q.String())
 	}
 }
+
+func TestNewQRCode(t *testing.T) {
+	q, err := NewQRCode(5130944286501155530, "US", "ssid",
+		"password", "")
+	if err != nil {
+		t.Fatalf("expected nil error, got %q", err)
+	}
+
+	expected := "A767eFsfyQBLc9xx6GPMeudN8kmEJ4/S"
+	if q.EncodedMessage() != expected {
+		t.Fatalf("expected %q, got %q", expected, q.EncodedMessage())
+	}
+}
