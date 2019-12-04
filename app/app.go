@@ -38,8 +38,13 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 	}, nil
 }
 
-func (a *App) Start() error {
-	err := a.showQRCode()
+func (a *App) Start(textMode bool) error {
+	var err error
+	if textMode {
+		err = a.showTextQRCode()
+	} else {
+		err = a.showPNGQRCode()
+	}
 	if err != nil {
 		return fmt.Errorf("error showing QR code: %w", err)
 	}
@@ -65,7 +70,18 @@ L:
 	return nil
 }
 
-func (a *App) showQRCode() error {
+func (a *App) showTextQRCode() error {
+	qrc, err := qrcode.New(a.qrc.EncodedMessage(), qrcode.Medium)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(qrc.ToString(false))
+
+	return nil
+}
+
+func (a *App) showPNGQRCode() error {
 	pngData, err := qrcode.Encode(a.qrc.EncodedMessage(), qrcode.Medium,
 		256)
 	if err != nil {
