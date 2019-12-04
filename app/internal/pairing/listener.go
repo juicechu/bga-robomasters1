@@ -3,7 +3,9 @@ package pairing
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -11,6 +13,10 @@ const (
 	listenerServerPort = 45678
 	listenerClientPort = 56789
 	maxBufferSize      = 256
+)
+
+var (
+	logger = log.New(os.Stdout, "PairingListener: ", log.LstdFlags)
 )
 
 type Listener struct {
@@ -38,6 +44,8 @@ func NewListener(appId uint64) *Listener {
 }
 
 func (l *Listener) Start() (<-chan *Event, error) {
+	logger.Printf("Starting on port %d.", listenerServerPort)
+
 	l.m.Lock()
 	defer l.m.Unlock()
 
@@ -66,6 +74,8 @@ func (l *Listener) Start() (<-chan *Event, error) {
 }
 
 func (l *Listener) Stop() error {
+	logger.Printf("Stopping on port %d.", listenerServerPort)
+
 	l.m.Lock()
 	defer l.m.Unlock()
 
@@ -87,11 +97,13 @@ func (l *Listener) Stop() error {
 }
 
 func (l *Listener) sendACK(ip net.IP) error {
+	logger.Printf("Sending ACK to %s:%d.", ip.String(), listenerClientPort)
+
 	buffer := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buffer, l.appId)
 
-	clientAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", ip.String(),
-		listenerClientPort))
+	clientAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d",
+		ip.String(), listenerClientPort))
 	if err != nil {
 		return fmt.Errorf("error resolving client address: %w", err)
 	}
@@ -107,8 +119,11 @@ func (l *Listener) sendACK(ip net.IP) error {
 func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 	bm, err := ParseBroadcastMessageData(buffer)
 	if err != nil {
+		logger.Printf("Error parsing broadcast message: %s.", err)
 		return nil
 	}
+
+	logger.Println("Broadcast message successfully parsed.")
 
 	l.m.Lock()
 	defer l.m.Unlock()
@@ -117,7 +132,8 @@ func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 	if l.clientMap[ip.String()] {
 		if bm.AppId() != l.appId {
 			l.clientMap[ip.String()] = false
-			return NewEvent(EventRemove, bm.SourceIp(), bm.SourceMac())
+			return NewEvent(EventRemove, bm.SourceIp(),
+				bm.SourceMac())
 		}
 	} else {
 		if bm.IsPairing() && bm.AppId() == l.appId {
@@ -142,19 +158,26 @@ L:
 	for {
 		n, addr, err := l.packetConn.ReadFrom(buffer)
 		if err != nil {
+			logger.Printf("Error reading from connection: %s\n",
+				err)
 			fullStop = true
 			break L
 		}
 
-		if event := l.maybeGenerateEvent(addr, buffer[:n]); event != nil {
+		logger.Printf("Got data from %s.\n", addr.String())
+
+		if event := l.maybeGenerateEvent(
+			addr, buffer[:n]); event != nil {
+			logger.Printf("Event %d generated.\n", event)
 			select {
 			case <-l.quitChan:
 				break L
 
 			case l.eventChan <- event:
-				// Do nothing.
+				logger.Println("Event sent.")
 			}
 		} else {
+			logger.Println("No event generated.")
 			select {
 			case <-l.quitChan:
 				break L
@@ -163,6 +186,8 @@ L:
 			}
 		}
 	}
+
+	logger.Println("Existing read loop.")
 
 	close(l.eventChan)
 	l.wg.Done()
