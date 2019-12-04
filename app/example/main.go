@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
 	"git.bug-br.org.br/bga/robomasters1/app"
 )
