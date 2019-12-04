@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io/ioutil"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
@@ -60,6 +61,8 @@ L:
 			fmt.Printf("%#+v\n", *event)
 		}
 	}
+
+	return nil
 }
 
 func (a *App) showQRCode() error {
