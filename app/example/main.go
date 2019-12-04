@@ -9,6 +9,7 @@ import (
 var (
 	ssId     = flag.String("ssid", "testssid", "wifi network to connect to")
 	password = flag.String("password", "testpassword", "wifi password")
+	textMode = flag.Bool("textmode", false, "enable/disable text mode")
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	err = a.Start()
+	err = a.Start(*textMode)
 	if err != nil {
 		panic(err)
 	}
