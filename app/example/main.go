@@ -13,6 +13,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	a, err := app.New("US", *ssId, *password /*bssId=*/, "")
 	if err != nil {
 		panic(err)
