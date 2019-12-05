@@ -123,7 +123,7 @@ func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 		return nil
 	}
 
-	logger.Println("Broadcast message successfully parsed.")
+	logger.Printf("Broadcast message successfully parsed: %s", bm)
 
 	l.m.Lock()
 	defer l.m.Unlock()

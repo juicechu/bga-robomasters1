@@ -73,3 +73,8 @@ func (b *BroadcastMessage) SourceMac() net.HardwareAddr {
 func (b *BroadcastMessage) AppId() uint64 {
 	return b.appId
 }
+
+func (b *BroadcastMessage) String() string {
+	return fmt.Sprintf("IsPairing:%t, SourceIp:%s, SourceMac:%s, AppId:%d",
+		b.isPairing, b.sourceIp, b.sourceMac, b.appId)
+}
