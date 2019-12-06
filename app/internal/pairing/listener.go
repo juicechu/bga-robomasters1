@@ -7,11 +7,13 @@ import (
 	"net"
 	"os"
 	"sync"
+
+	"git.bug-br.org.br/bga/robomasters1/app/internal/udp"
 )
 
 const (
-	listenerServerPort = 45678
-	listenerClientPort = 56789
+	listenerLocalPort  = 45678
+	listenerRemotePort = 56789
 	maxBufferSize      = 256
 )
 
@@ -20,104 +22,81 @@ var (
 )
 
 type Listener struct {
-	appId uint64
+	appId    uint64
+	portPair *udp.PortPair
 
 	m          sync.Mutex
-	packetConn net.PacketConn
+	packetChan <-chan *udp.Packet
 	eventChan  chan *Event
-	quitChan   chan struct{}
 	clientMap  map[string]bool
-
-	wg sync.WaitGroup
 }
 
 func NewListener(appId uint64) *Listener {
+	portPair := udp.NewPortPair(listenerLocalPort, listenerRemotePort,
+		maxBufferSize)
 	return &Listener{
 		appId,
+		portPair,
 		sync.Mutex{},
 		nil,
 		nil,
 		nil,
-		make(map[string]bool),
-		sync.WaitGroup{},
 	}
 }
 
 func (l *Listener) Start() (<-chan *Event, error) {
-	logger.Printf("Starting on port %d.", listenerServerPort)
-
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	if l.packetConn != nil {
-		return nil, fmt.Errorf("already started")
-	}
-
-	packetConn, err := net.ListenPacket("udp", fmt.Sprintf(
-		":%d", listenerServerPort))
+	packetChan, err := l.portPair.Start()
 	if err != nil {
-		return nil, fmt.Errorf("error starting listener: %w", err)
+		return nil, err
 	}
 
-	packetConn.(*net.UDPConn).SetReadBuffer(maxBufferSize)
-	packetConn.(*net.UDPConn).SetWriteBuffer(maxBufferSize)
+	logger.Printf("Starting on port %d.", listenerLocalPort)
 
-	l.packetConn = packetConn
-
+	l.packetChan = packetChan
 	l.eventChan = make(chan *Event)
-	l.quitChan = make(chan struct{})
+	l.clientMap = make(map[string]bool)
 
-	l.wg.Add(1)
 	go l.loop()
 
 	return l.eventChan, nil
 }
 
 func (l *Listener) Stop() error {
-	logger.Printf("Stopping on port %d.", listenerServerPort)
-
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	if l.packetConn == nil {
-		return fmt.Errorf("not started")
+	err := l.portPair.Stop()
+	if err != nil {
+		return err
 	}
 
-	close(l.quitChan)
-	l.packetConn.Close()
+	logger.Printf("Stopping on port %d.", listenerLocalPort)
 
-	l.packetConn = nil
-
-	l.eventChan = nil
-	l.quitChan = nil
-
-	l.wg.Wait()
+	l.packetChan = nil
+	l.clientMap = nil
 
 	return nil
 }
 
 func (l *Listener) sendACK(ip net.IP) error {
-	logger.Printf("Sending ACK to %s:%d.", ip.String(), listenerClientPort)
+	logger.Printf("Sending ACK to %s:%d.", ip.String(), listenerRemotePort)
 
 	buffer := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buffer, l.appId)
 
-	clientAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d",
-		ip.String(), listenerClientPort))
+	err := l.portPair.Send(ip, buffer)
 	if err != nil {
-		return fmt.Errorf("error resolving client address: %w", err)
-	}
-
-	_, err = l.packetConn.WriteTo(buffer, clientAddr)
-	if err != nil {
-		return fmt.Errorf("error sending client ack: %w", err)
+		return fmt.Errorf("error sending ack: %w", err)
 	}
 
 	return nil
 }
 
-func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
-	bm, err := ParseBroadcastMessageData(buffer)
+func (l *Listener) maybeGenerateEvent(ip net.IP, data []byte) *Event {
+	bm, err := ParseBroadcastMessageData(data)
 	if err != nil {
 		logger.Printf("Error parsing broadcast message: %s.", err)
 		return nil
@@ -128,7 +107,6 @@ func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	ip := addr.(*net.UDPAddr).IP
 	if l.clientMap[ip.String()] {
 		if bm.AppId() != l.appId {
 			l.clientMap[ip.String()] = false
@@ -151,48 +129,18 @@ func (l *Listener) maybeGenerateEvent(addr net.Addr, buffer []byte) *Event {
 }
 
 func (l *Listener) loop() {
-	fullStop := false
-
-	buffer := make([]byte, maxBufferSize)
-L:
-	for {
-		n, addr, err := l.packetConn.ReadFrom(buffer)
-		if err != nil {
-			logger.Printf("Error reading from connection: %s\n",
-				err)
-			fullStop = true
-			break L
+	for packet := range l.packetChan {
+		event := l.maybeGenerateEvent(packet.IP(), packet.Data())
+		if event == nil {
+			continue
 		}
 
-		logger.Printf("Got data from %s.\n", addr.String())
-
-		if event := l.maybeGenerateEvent(
-			addr, buffer[:n]); event != nil {
-			logger.Printf("Event %d generated.\n", event)
-			select {
-			case <-l.quitChan:
-				break L
-
-			case l.eventChan <- event:
-				logger.Println("Event sent.")
-			}
-		} else {
-			logger.Println("No event generated.")
-			select {
-			case <-l.quitChan:
-				break L
-			default:
-				// Do nothing.
-			}
-		}
+		// TODO(bga): Add a quit channel.
+		l.eventChan <- event
 	}
 
 	logger.Println("Existing read loop.")
 
 	close(l.eventChan)
-	l.wg.Done()
-
-	if fullStop {
-		l.Stop()
-	}
+	l.eventChan = nil
 }
