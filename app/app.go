@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/udp"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 	"github.com/skratchdot/open-golang/open"
@@ -17,6 +18,7 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
+	pp  *udp.PortPair
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -40,6 +42,7 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		appId,
 		qrc,
 		pairing.NewListener(appId),
+		udp.NewPortPair(10607, 10609, 1514),
 	}, nil
 }
 
@@ -59,6 +62,11 @@ func (a *App) Start(textMode bool) error {
 		return fmt.Errorf("error starting pairing listener: %w", err)
 	}
 
+	packetChan, err := a.pp.Start()
+	if err != nil {
+		return fmt.Errorf("error starting packet listener: %w", err)
+	}
+
 L:
 	for {
 		select {
@@ -69,6 +77,12 @@ L:
 
 			// TODO(bga): Do something meaningful.
 			fmt.Printf("%#+v\n", *event)
+		case packet, ok := <-packetChan:
+			if !ok {
+				break L
+			}
+
+			fmt.Printf("%#+v\n", *packet)
 		}
 	}
 
