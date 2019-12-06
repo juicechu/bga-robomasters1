@@ -1,4 +1,4 @@
-package pairing
+package udp
 
 import (
 	"fmt"
