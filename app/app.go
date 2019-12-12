@@ -1,10 +1,19 @@
 package app
 
+/*
+#include <stdio.h>
+
+static inline void callback(unsigned long long e, void* info, unsigned long long tag) {
+	printf("Unity bridge callback called!\n"
+}
+*/
+import "C"
 import (
 	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unitybridge/wrapper"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/udp"
 	"github.com/google/uuid"
@@ -65,6 +74,21 @@ func (a *App) Start(textMode bool) error {
 	packetChan, err := a.pp.Start()
 	if err != nil {
 		return fmt.Errorf("error starting packet listener: %w", err)
+	}
+
+	// Setup Unity Bridge.
+	//
+	// TODO(bga): Move this to its own function/method.
+	wrapper.Instance().CreateUnityBridge("Robomaster", true);
+	eventTypes := []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 100, 101, 200, 300,
+		301, 302, 303, 304, 305,306, 500}
+	for eventType := range eventTypes {
+		wrapper.Instance().RegisterEventCallback(eventType << 32, C.callback)
+	}
+	ok := wrapper.Instance().UnityBridgeInitialize()
+	if !ok {
+		wrapper.Instance().DestroyUnityBridge()
+		return fmt.Errorf("failed initializing unity bridge")
 	}
 
 L:
