@@ -69,7 +69,11 @@ func (b *UnityBridge)SendEvent(params ...interface{}) error {
 	w := wrapper.Instance()
         switch dataType {
 	case 0:
-		w.UnitySendEvent(event, data.([]byte), tag)
+		if data != nil {
+			w.UnitySendEvent(event, data.([]byte), tag)
+		} else {
+			w.UnitySendEvent(event, nil, tag)
+		}
 	case 1:
 		w.UnitySendEventWithString(event, data.(string), tag)
 	case 2:
