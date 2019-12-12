@@ -4,7 +4,7 @@ package wrapper
 #include <stdlib.h>
 
 typedef void (*UnityEventCallbackFunc)(unsigned long long e, void* info,
-	unsigned long long tag);
+	int size, unsigned long long tag);
 */
 import "C"
 import (
