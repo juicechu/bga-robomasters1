@@ -7,7 +7,6 @@ import (
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/udp"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 	"github.com/skratchdot/open-golang/open"
@@ -19,7 +18,6 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
-	pp  *udp.PortPair
 	ub  *unitybridge.UnityBridge
 }
 
@@ -44,7 +42,6 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		appId,
 		qrc,
 		pairing.NewListener(appId),
-		udp.NewPortPair(10607, 10609, 1514),
 		nil,
 	}, nil
 }
@@ -60,23 +57,28 @@ func (a *App) Start(textMode bool) error {
 		return fmt.Errorf("error showing QR code: %w", err)
 	}
 
-	eventChan, err := a.pl.Start()
-	if err != nil {
-		return fmt.Errorf("error starting pairing listener: %w", err)
-	}
-
-	packetChan, err := a.pp.Start()
-	if err != nil {
-		return fmt.Errorf("error starting packet listener: %w", err)
-	}
-
 	// Setup Unity Bridge.
-	ub, err := unitybridge.New("Robomaster", true)
+        ub, err := unitybridge.New("Robomaster", true)
         if err != nil {
                 return err
         }
 
-	a.ub = ub
+        a.ub = ub
+
+	err = a.ub.SendEvent((uint64(100) << 32) | 3, uint64(10607), uint64(0))
+	if err != nil {
+		panic(err)
+	}
+
+	err = a.ub.SendEvent((uint64(100) << 32) | 0)
+	if err != nil {
+		panic(err)
+	}
+
+	eventChan, err := a.pl.Start()
+	if err != nil {
+		return fmt.Errorf("error starting pairing listener: %w", err)
+	}
 
 L:
 	for {
@@ -86,14 +88,7 @@ L:
 				break L
 			}
 
-			// TODO(bga): Do something meaningful.
-			fmt.Printf("%#+v\n", *event)
-		case packet, ok := <-packetChan:
-			if !ok {
-				break L
-			}
-
-			fmt.Printf("%#+v\n", *packet)
+			fmt.Printf("%#+v\n", event)
 		}
 	}
 
