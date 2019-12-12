@@ -91,7 +91,7 @@ func (w *wrapper) UnityBridgeUninitialize() {
 	dllFunctionMap["UnityBridgeUninitialze"].Call()
 }
 
-func (w *wrapper) UnitySetEventCallback(e int64,
+func (w *wrapper) UnitySetEventCallback(e uint64,
 	callback UnityEventCallbackFunc) {
 	dllFunctionMap["UnitySetEventCallback"].Call(uintptr(e),
 		uintptr(unsafe.Pointer(callback)))
