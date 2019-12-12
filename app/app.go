@@ -3,8 +3,8 @@ package app
 /*
 #include <stdio.h>
 
-static inline void callback(unsigned long long e, void* info, unsigned long long tag) {
-	printf("Unity bridge callback called!\n"
+static void callback(unsigned long long e, void* info, unsigned long long tag) {
+	printf("Unity bridge callback called!\n");
 }
 */
 import "C"

@@ -17,7 +17,7 @@ type wrapper struct {
 	unityBridgeDLL *syscall.DLL
 }
 
-type unityEventCallbackFunc C.UnityEventCallbackFunc
+type UnityEventCallbackFunc C.UnityEventCallbackFunc
 
 var (
 	m         sync.Mutex = sync.Mutex{}
