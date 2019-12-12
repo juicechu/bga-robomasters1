@@ -1,4 +1,4 @@
-package bridge
+package wrapper
 
 /*
 #include <stdlib.h>
@@ -16,6 +16,8 @@ import (
 type wrapper struct {
 	unityBridgeDLL *syscall.DLL
 }
+
+type unityEventCallbackFunc C.UnityEventCallbackFunc
 
 var (
 	m         sync.Mutex = sync.Mutex{}
@@ -90,7 +92,7 @@ func (w *wrapper) UnityBridgeUninitialize() {
 }
 
 func (w *wrapper) UnitySetEventCallback(e int64,
-	callback C.UnityEventCallbackFunc) {
+	callback UnityEventCallbackFunc) {
 	dllFunctionMap["UnitySetEventCallback"].Call(uintptr(e),
 		uintptr(unsafe.Pointer(callback)))
 }
