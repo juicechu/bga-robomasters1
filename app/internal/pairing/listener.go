@@ -115,10 +115,10 @@ func (l *Listener) maybeGenerateEvent(ip net.IP, data []byte) *Event {
 		}
 	} else {
 		if bm.IsPairing() && bm.AppId() == l.appId {
-			err = l.sendACK(ip)
-			if err != nil {
-				return nil
-			}
+			//err = l.sendACK(ip)
+			//if err != nil {
+			//	return nil
+			//}
 
 			l.clientMap[ip.String()] = true
 			return NewEvent(EventAdd, bm.SourceIp(), bm.SourceMac())

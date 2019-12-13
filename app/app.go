@@ -71,14 +71,17 @@ func (a *App) Start(textMode bool) error {
 		panic(err)
 	}
 
-	// Set up destination port?
-	err = a.ub.SendEvent((uint64(100)<<32)|uint64(3), uint64(10607), uint64(0))
+	// Reset connection to defaults.
+	err = a.ub.SendEvent((uint64(100)<<32)|uint64(2), "192.168.2.1")
 	if err != nil {
 		panic(err)
 	}
-
-	// No idea what it does for now.
-	err = a.ub.SendEvent((uint64(100) << 32) | 0)
+	err = a.ub.SendEvent((uint64(100)<<32)|uint64(3), uint64(10607),
+		uint64(0))
+	if err != nil {
+		panic(err)
+	}
+	err = a.ub.SendEvent((uint64(100) << 32) | uint64(0))
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +97,29 @@ L:
 		case event, ok := <-eventChan:
 			if !ok {
 				break L
+			}
+
+			if event.Type() == pairing.EventAdd {
+				err = a.ub.SendEvent(
+					(uint64(100) << 32) | uint64(1))
+				if err != nil {
+					panic(err)
+				}
+				err = a.ub.SendEvent((uint64(100)<<32)|
+					uint64(2), event.IP().String())
+				if err != nil {
+					panic(err)
+				}
+				err = a.ub.SendEvent((uint64(100)<<32)|
+					uint64(3), uint64(10607))
+				if err != nil {
+					panic(err)
+				}
+				err = a.ub.SendEvent((uint64(100) << 32) |
+					uint64(0))
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			fmt.Printf("%#+v\n", event)
