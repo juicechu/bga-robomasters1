@@ -58,18 +58,26 @@ func (a *App) Start(textMode bool) error {
 	}
 
 	// Setup Unity Bridge.
-        ub, err := unitybridge.New("Robomaster", true)
-        if err != nil {
-                return err
-        }
+	ub, err := unitybridge.New("Robomaster", true)
+	if err != nil {
+		return err
+	}
 
-        a.ub = ub
+	a.ub = ub
 
-	err = a.ub.SendEvent((uint64(100) << 32) | 3, uint64(10607), uint64(0))
+	// Start listening to AirlinkConnection events.
+	err = a.ub.SendEvent(uint64(4)<<32 | uint64(117440513))
 	if err != nil {
 		panic(err)
 	}
 
+	// Set up destination port?
+	err = a.ub.SendEvent((uint64(100)<<32)|uint64(3), uint64(10607), uint64(0))
+	if err != nil {
+		panic(err)
+	}
+
+	// No idea what it does for now.
 	err = a.ub.SendEvent((uint64(100) << 32) | 0)
 	if err != nil {
 		panic(err)
