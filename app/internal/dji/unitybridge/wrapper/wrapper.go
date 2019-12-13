@@ -7,6 +7,8 @@ package wrapper
 */
 import "C"
 
+type UnityEventCallbackFunc C.UnityEventCallbackFunc
+
 func CreateUnityBridge(name string, debuggable bool) {
 	panic("Windows amd64 is the only supported platform.")
 }
@@ -23,7 +25,7 @@ func UnityBridgeUninitialize() {
 	panic("Windows amd64 is the only supported platform.")
 }
 
-func UnitySetEventCallback(e uint64, callback C.UnityEventCallbackFunc) {
+func UnitySetEventCallback(e uint64, callback UnityEventCallbackFunc) {
 	panic("Windows amd64 is the only supported platform.")
 }
 

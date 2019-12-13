@@ -11,6 +11,8 @@ import (
 	"unsafe"
 )
 
+type UnityEventCallbackFunc C.UnityEventCallbackFunc
+
 func CreateUnityBridge(name string, debuggable bool) {
 	intDebuggable := C.int(0)
 	if debuggable {
@@ -39,8 +41,9 @@ func UnityBridgeUninitialize() {
 	C.UnityBridgeUninitialze()
 }
 
-func UnitySetEventCallback(e uint64, callback C.UnityEventCallbackFunc) {
-	C.UnitySetEventCallback(C.ulonglong(e), callback)
+func UnitySetEventCallback(e uint64, callback UnityEventCallbackFunc) {
+	C.UnitySetEventCallback(C.ulonglong(e),
+		C.UnityEventCallbackFunc(callback))
 }
 
 func UnitySendEvent(e uint64, info []byte, tag uint64) {

@@ -1,5 +1,5 @@
 #include "_cgo_export.h"
-#include "unitybridge.h"
+#include "unitybridge_event_callback.h"
 
 extern void UnityEventCallbackGo(GoUint64 e, GoSlice info, GoUint64 tag);
 
