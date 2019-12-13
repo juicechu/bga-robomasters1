@@ -34,7 +34,7 @@ func DestroyUnityBridge() {
 func UnityBridgeInitialize() bool {
 	ok := C.UnityBridgeInitialize()
 
-	return ok == 1
+	return ok != 0
 }
 
 func UnityBridgeUninitialize() {
