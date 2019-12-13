@@ -1,71 +1,20 @@
 package wrapper
 
 /*
-#include <stdlib.h>
+#cgo LDFLAGS: -L${SRCDIR} -lunitybridge
 
-typedef void (*UnityEventCallbackFunc)(unsigned long long e, void* info,
-	int size, unsigned long long tag);
+#include "unitybridge.h"
 */
 import "C"
 import (
-	"sync"
 	"syscall"
 	"unsafe"
 )
 
-type wrapper struct {
-	unityBridgeDLL *syscall.DLL
-}
-
-type UnityEventCallbackFunc C.UnityEventCallbackFunc
-
-var (
-	m         sync.Mutex = sync.Mutex{}
-	singleton *wrapper   = nil
-)
-
-var dllFunctionMap = map[string]*syscall.Proc{
-	"CreateUnityBridge":        nil,
-	"DestroyUnityBridge":       nil,
-	"UnityBridgeInitialize":    nil,
-	"UnityBridgeUninitialze":   nil, // Typo is present in the DLL.
-	"UnitySetEventCallback":    nil,
-	"UnitySendEvent":           nil,
-	"UnitySendEventWithString": nil,
-	"UnitySendEventWithNumber": nil,
-}
-
-func Instance() *wrapper {
-	m.Lock()
-	defer m.Unlock()
-
-	if singleton == nil {
-		unityBridgeDLL, err := syscall.LoadDLL("unitybridge.dll")
-		if err != nil {
-			panic(err)
-		}
-
-		for k := range dllFunctionMap {
-			proc, err := unityBridgeDLL.FindProc(k)
-			if err != nil {
-				panic(err)
-			}
-
-			dllFunctionMap[k] = proc
-		}
-
-		singleton = &wrapper{
-			unityBridgeDLL,
-		}
-	}
-
-	return singleton
-}
-
-func (w *wrapper) CreateUnityBridge(name string, debuggable bool) {
-	intDebuggable := int(0)
+func CreateUnityBridge(name string, debuggable bool) {
+	intDebuggable := C.int(0)
 	if debuggable {
-		intDebuggable = int(1)
+		intDebuggable = C.int(1)
 	}
 
 	utf16PtrName, err := syscall.UTF16PtrFromString(name)
@@ -73,50 +22,47 @@ func (w *wrapper) CreateUnityBridge(name string, debuggable bool) {
 		panic(err)
 	}
 
-	dllFunctionMap["CreateUnityBridge"].Call(
-		uintptr(unsafe.Pointer(utf16PtrName)), uintptr(intDebuggable))
+	C.CreateUnityBridge((*C.ushort)(utf16PtrName), intDebuggable)
 }
 
-func (w *wrapper) DestroyUnityBridge() {
-	dllFunctionMap["DestroyUnityBridge"].Call()
+func DestroyUnityBridge() {
+	C.DestroyUnityBridge()
 }
 
-func (w *wrapper) UnityBridgeInitialize() bool {
-	r1, _, _ := dllFunctionMap["UnityBridgeInitialize"].Call()
+func UnityBridgeInitialize() bool {
+	ok := C.UnityBridgeInitialize()
 
-	return r1 != 0
+	return ok == 1
 }
 
-func (w *wrapper) UnityBridgeUninitialize() {
-	dllFunctionMap["UnityBridgeUninitialze"].Call()
+func UnityBridgeUninitialize() {
+	C.UnityBridgeUninitialze()
 }
 
-func (w *wrapper) UnitySetEventCallback(e uint64,
-	callback UnityEventCallbackFunc) {
-	dllFunctionMap["UnitySetEventCallback"].Call(uintptr(e),
-		uintptr(unsafe.Pointer(callback)))
+func UnitySetEventCallback(e uint64, callback C.UnityEventCallbackFunc) {
+	C.UnitySetEventCallback(C.ulonglong(e), callback)
 }
 
-func (w *wrapper) UnitySendEvent(e uint64, info []byte, tag uint64) {
+func UnitySendEvent(e uint64, info []byte, tag uint64) {
 	var infoPtr unsafe.Pointer = nil
 	if info != nil {
 		infoPtr = unsafe.Pointer(&info[0])
 	}
 
-	dllFunctionMap["UnitySendEvent"].Call(uintptr(e), uintptr(infoPtr),
-		uintptr(tag))
+	C.UnitySendEvent(C.ulonglong(e), infoPtr, C.ulonglong(tag))
 }
 
-func (w *wrapper) UnitySendEventWithString(e uint64, info string, tag uint64) {
-	infoPtr := C.CString(info)
-	defer C.free(unsafe.Pointer(infoPtr))
+func UnitySendEventWithString(e uint64, info string, tag uint64) {
+	utf16PtrInfo, err := syscall.UTF16PtrFromString(info)
+	if err != nil {
+		panic(err)
+	}
 
-	dllFunctionMap["UnitySendEventWithString"].Call(uintptr(e),
-		uintptr(unsafe.Pointer(infoPtr)), uintptr(tag))
+	C.UnitySendEventWithString(C.ulonglong(e), (*C.ushort)(utf16PtrInfo),
+		C.ulonglong(tag))
 }
 
-func (w *wrapper) UnitySendEventWithNumber(e, info, tag uint64) {
-	dllFunctionMap["UnitySendEventWithNumber"].Call(uintptr(e),
-		uintptr(info), uintptr(tag))
+func UnitySendEventWithNumber(e, info, tag uint64) {
+	C.UnitySendEventWithNumber(C.ulonglong(e), C.ulonglong(info),
+		C.ulonglong(tag))
 }
-

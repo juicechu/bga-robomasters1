@@ -2,37 +2,39 @@
 
 package wrapper
 
-type wrapper struct {}
+/*
+#include "unitybridge.h"
+*/
+import "C"
 
-type UnityEventCallbackFunc func()
-
-func Instance() *wrapper {
-	panic("Only windows amd64 is supported.")
+func CreateUnityBridge(name string, debuggable bool) {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) CreateUnityBridge(name string, debuggable bool) {
+func DestroyUnityBridge() {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) DestroyUnityBridge() {
+func UnityBridgeInitialize() bool {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) UnityBridgeInitialize() bool {
-	return false
+func UnityBridgeUninitialize() {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) UnityBridgeUninitialize() {
+func UnitySetEventCallback(e uint64, callback C.UnityEventCallbackFunc) {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) UnitySetEventCallback(e int64,
-	callback UnityEventCallbackFunc) {
+func UnitySendEvent(e uint64, info []byte, tag uint64) {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) UnitySendEvent(e uint64, info []byte, tag uint64) {
+func UnitySendEventWithString(e uint64, info string, tag uint64) {
+	panic("Windows amd64 is the only supported platform.")
 }
 
-func (w *wrapper) UnitySendEventWithString(e uint64, info string, tag uint64) {
+func UnitySendEventWithNumber(e, info, tag uint64) {
+	panic("Windows amd64 is the only supported platform.")
 }
-
-func (w *wrapper) UnitySendEventWithNumber(e, info, tag uint64) {
-}
-
