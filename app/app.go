@@ -32,8 +32,8 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 
 func NewWithAppID(countryCode, ssId, password, bssId string,
 	appId uint64) (*App, error) {
-	qrc, err := internalqrcode.NewQRCode(appId, countryCode, ssId, password,
-		bssId)
+	qrc, err := internalqrcode.NewQRCode(appId, countryCode, ssId,
+		password, bssId)
 	if err != nil {
 		return nil, err
 	}
