@@ -16,19 +16,19 @@ type UnityBridge struct {
 
 func New(name string, debuggable bool) (*UnityBridge, error) {
 	wrapper.CreateUnityBridge(name, debuggable)
-	eventTypes := []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 100, 101, 200, 300,
-		301, 302, 303, 304, 305, 306, 500}
-	for _, eventType := range eventTypes {
-		wrapper.UnitySetEventCallback(eventType<<32,
-			wrapper.UnityEventCallbackFunc(C.UnityEventCallback))
-	}
+
+	ub := &UnityBridge{}
+
+	ub.RegisterCallback()
+
 	ok := wrapper.UnityBridgeInitialize()
 	if !ok {
+		ub.UnregisterCallback()
 		wrapper.DestroyUnityBridge()
 		return nil, fmt.Errorf("failed initializing unity bridge")
 	}
 
-	return &UnityBridge{}, nil
+	return ub, nil
 }
 
 func (b *UnityBridge) SendEvent(params ...interface{}) error {
@@ -80,6 +80,21 @@ func (b *UnityBridge) SendEvent(params ...interface{}) error {
 	}
 
 	return nil
+}
+
+func (b *UnityBridge) RegisterCallback() {
+	for _, eventType := range unity.AllEventTypes() {
+		event := unity.NewEvent(eventType)
+		wrapper.UnitySetEventCallback(event.Code(),
+			wrapper.UnityEventCallbackFunc(C.UnityEventCallback))
+	}
+}
+
+func (b *UnityBridge) UnregisterCallback() {
+	for _, eventType := range unity.AllEventTypes() {
+		event := unity.NewEvent(eventType)
+		wrapper.UnitySetEventCallback(event.Code(), nil)
+	}
 }
 
 //export UnityEventCallbackGo

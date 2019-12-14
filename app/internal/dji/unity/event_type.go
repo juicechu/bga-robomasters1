@@ -67,3 +67,12 @@ func EventTypeName(eventType EventType) string {
 
 	return eventTypeName
 }
+
+func AllEventTypes() []EventType {
+	eventTypes := make([]EventType, 0, len(eventTypeNameMap))
+	for eventType, _ := range eventTypeNameMap {
+		eventTypes = append(eventTypes, eventType)
+	}
+
+	return eventTypes
+}
