@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
 	"github.com/google/uuid"
@@ -66,22 +67,24 @@ func (a *App) Start(textMode bool) error {
 	a.ub = ub
 
 	// Start listening to AirlinkConnection events.
-	err = a.ub.SendEvent(uint64(4)<<32 | uint64(117440513))
+	err = a.ub.SendEvent(unity.NewEventWithSubType(
+		unity.EventTypeStartListening, 117440513))
 	if err != nil {
 		panic(err)
 	}
 
 	// Reset connection to defaults.
-	err = a.ub.SendEvent((uint64(100)<<32)|uint64(2), "192.168.2.1")
+	err = a.ub.SendEvent(unity.NewEventWithSubType(
+		unity.EventTypeConnection, 2), "192.168.2.1")
 	if err != nil {
 		panic(err)
 	}
-	err = a.ub.SendEvent((uint64(100)<<32)|uint64(3), uint64(10607),
-		uint64(0))
+	err = a.ub.SendEvent(unity.NewEventWithSubType(
+		unity.EventTypeConnection, 3), uint64(10607))
 	if err != nil {
 		panic(err)
 	}
-	err = a.ub.SendEvent((uint64(100) << 32) | uint64(0))
+	err = a.ub.SendEvent(unity.NewEvent(unity.EventTypeConnection))
 	if err != nil {
 		panic(err)
 	}
@@ -100,23 +103,25 @@ L:
 			}
 
 			if event.Type() == pairing.EventAdd {
-				err = a.ub.SendEvent(
-					(uint64(100) << 32) | uint64(1))
+				err = a.ub.SendEvent(unity.NewEventWithSubType(
+					unity.EventTypeConnection, 1))
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent((uint64(100)<<32)|
-					uint64(2), event.IP().String())
+				err = a.ub.SendEvent(unity.NewEventWithSubType(
+					unity.EventTypeConnection, 2),
+					event.IP().String())
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent((uint64(100)<<32)|
-					uint64(3), uint64(10607))
+				err = a.ub.SendEvent(unity.NewEventWithSubType(
+					unity.EventTypeConnection, 3),
+					uint64(10607))
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent((uint64(100) << 32) |
-					uint64(0))
+				err = a.ub.SendEvent(unity.NewEvent(
+					unity.EventTypeConnection))
 				if err != nil {
 					panic(err)
 				}

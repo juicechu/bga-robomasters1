@@ -7,6 +7,7 @@ import "C"
 import (
 	"fmt"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unitybridge/wrapper"
 )
 
@@ -35,9 +36,9 @@ func (b *UnityBridge) SendEvent(params ...interface{}) error {
 		return fmt.Errorf("1, 2 or 3 parameters are required")
 	}
 
-	event, ok := params[0].(uint64)
+	event, ok := params[0].(*unity.Event)
 	if !ok {
-		return fmt.Errorf("event (first) parameter must be uint64")
+		return fmt.Errorf("event (first) parameter must be a *unity.Event")
 	}
 
 	dataType := 0
@@ -68,14 +69,14 @@ func (b *UnityBridge) SendEvent(params ...interface{}) error {
 	switch dataType {
 	case 0:
 		if data != nil {
-			wrapper.UnitySendEvent(event, data.([]byte), tag)
+			wrapper.UnitySendEvent(event.Code(), data.([]byte), tag)
 		} else {
-			wrapper.UnitySendEvent(event, nil, tag)
+			wrapper.UnitySendEvent(event.Code(), nil, tag)
 		}
 	case 1:
-		wrapper.UnitySendEventWithString(event, data.(string), tag)
+		wrapper.UnitySendEventWithString(event.Code(), data.(string), tag)
 	case 2:
-		wrapper.UnitySendEventWithNumber(event, data.(uint64), tag)
+		wrapper.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
 	}
 
 	return nil
