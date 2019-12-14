@@ -15,7 +15,7 @@ typedef void(*UnityEventCallbackFunc)(unsigned long long e, void* info,
 		int length, unsigned long long tag);
 
 // Unity Bridge construction and destruction.
-void CreateUnityBridge(const unsigned short* name, int debuggable);
+void CreateUnityBridge(const char* name, int debuggable);
 void DestroyUnityBridge();
 
 // Unity Bridge initialization and uninitialization. The typo in the
@@ -32,7 +32,7 @@ void UnitySetEventCallback(unsigned long long e,
 // is not NULL, that is). The other two are just wrappers for easier sending of
 // strings and numbers (as int64, a.k.a. unsigned long long).
 void UnitySendEvent(unsigned long long e, void* info, unsigned long long tag);
-void UnitySendEventWithString(unsigned long long e, const unsigned short* info,
+void UnitySendEventWithString(unsigned long long e, const char* info,
 		unsigned long long tag);
 void UnitySendEventWithNumber(unsigned long long e, unsigned long long info,
 		unsigned long long tag);

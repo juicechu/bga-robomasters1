@@ -3,11 +3,12 @@ package wrapper
 /*
 #cgo LDFLAGS: -L${SRCDIR} -lunitybridge
 
+#include <stdlib.h>
+
 #include "unitybridge.h"
 */
 import "C"
 import (
-	"syscall"
 	"unsafe"
 )
 
@@ -19,12 +20,11 @@ func CreateUnityBridge(name string, debuggable bool) {
 		intDebuggable = C.int(1)
 	}
 
-	utf16PtrName, err := syscall.UTF16PtrFromString(name)
-	if err != nil {
-		panic(err)
-	}
+	cName := C.CString(name)
 
-	C.CreateUnityBridge((*C.ushort)(utf16PtrName), intDebuggable)
+	C.CreateUnityBridge(cName, intDebuggable)
+
+	C.free(unsafe.Pointer(cName))
 }
 
 func DestroyUnityBridge() {
@@ -56,13 +56,12 @@ func UnitySendEvent(e uint64, info []byte, tag uint64) {
 }
 
 func UnitySendEventWithString(e uint64, info string, tag uint64) {
-	utf16PtrInfo, err := syscall.UTF16PtrFromString(info)
-	if err != nil {
-		panic(err)
-	}
+	cInfo := C.CString(info)
 
-	C.UnitySendEventWithString(C.ulonglong(e), (*C.ushort)(utf16PtrInfo),
+	C.UnitySendEventWithString(C.ulonglong(e), cInfo,
 		C.ulonglong(tag))
+
+	C.free(unsafe.Pointer(cInfo))
 }
 
 func UnitySendEventWithNumber(e, info, tag uint64) {
