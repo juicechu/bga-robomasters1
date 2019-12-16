@@ -120,6 +120,8 @@ func (b *unityBridge) AddEventHandler(event *unity.Event,
 		}
 	}
 
+	b.eventHandlerMap[eventType] = handlerMap
+
 	return i, nil
 }
 
