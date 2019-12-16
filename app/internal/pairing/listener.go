@@ -81,8 +81,8 @@ func (l *Listener) Stop() error {
 	return nil
 }
 
-func (l *Listener) sendACK(ip net.IP) error {
-	logger.Printf("Sending ACK to %s:%d.", ip.String(), listenerRemotePort)
+func (l *Listener) SendACK(ip net.IP) error {
+	logger.Printf("Sending ACK to %s:%d.\n", ip.String(), listenerRemotePort)
 
 	buffer := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buffer, l.appId)
@@ -115,11 +115,6 @@ func (l *Listener) maybeGenerateEvent(ip net.IP, data []byte) *Event {
 		}
 	} else {
 		if bm.IsPairing() && bm.AppId() == l.appId {
-			//err = l.sendACK(ip)
-			//if err != nil {
-			//	return nil
-			//}
-
 			l.clientMap[ip.String()] = true
 			return NewEvent(EventAdd, bm.SourceIp(), bm.SourceMac())
 		}
