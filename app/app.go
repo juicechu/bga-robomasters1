@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"io/ioutil"
+	"log"
+	"net"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
@@ -63,7 +65,23 @@ func (a *App) Start(textMode bool) error {
 
 	ub := bridge.Instance()
 
+	// HACK!
+	connectingIP := net.IP{}
+
 	// Start listening to AirlinkConnection events.
+	event := unity.NewEventWithSubType(
+		unity.EventTypeStartListening, 117440513)
+	var index int
+	index, err = ub.AddEventHandler(event,
+		func(event *unity.Event, info []byte, tag uint64) {
+			// HACK! Should parse info (which is JSON) and
+			// check result.
+			a.pl.SendACK(connectingIP)
+			err := ub.RemoveEventHandler(event, index)
+			if err != nil {
+				log.Println(err)
+			}
+		})
 	err = ub.SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeStartListening, 117440513))
 	if err != nil {
@@ -94,12 +112,13 @@ func (a *App) Start(textMode bool) error {
 L:
 	for {
 		select {
-		case event, ok := <-eventChan:
+		case pairingEvent, ok := <-eventChan:
 			if !ok {
 				break L
 			}
 
-			if event.Type() == pairing.EventAdd {
+			if pairingEvent.Type() == pairing.EventAdd {
+				connectingIP = pairingEvent.IP()
 				err = ub.SendEvent(unity.NewEventWithSubType(
 					unity.EventTypeConnection, 1))
 				if err != nil {
@@ -107,7 +126,7 @@ L:
 				}
 				err = ub.SendEvent(unity.NewEventWithSubType(
 					unity.EventTypeConnection, 2),
-					event.IP().String())
+					pairingEvent.IP().String())
 				if err != nil {
 					panic(err)
 				}
@@ -124,7 +143,7 @@ L:
 				}
 			}
 
-			fmt.Printf("%#+v\n", event)
+			fmt.Printf("%#+v\n", pairingEvent)
 		}
 	}
 
