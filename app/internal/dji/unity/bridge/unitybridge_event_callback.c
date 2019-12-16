@@ -1,7 +1,7 @@
 #include "_cgo_export.h"
 #include "unitybridge_event_callback.h"
 
-extern void UnityEventCallbackGo(GoUint64 e, GoSlice info, GoUint64 tag);
+extern void unityEventCallbackGo(GoUint64 e, GoSlice info, GoUint64 tag);
 
 void UnityEventCallback(unsigned long long e, void* info, int length,
 		unsigned long long tag) {
@@ -11,6 +11,6 @@ void UnityEventCallback(unsigned long long e, void* info, int length,
 	info_slice.len = length;
 	info_slice.cap = length;
 
-	UnityEventCallbackGo(e, info_slice, tag);
+	unityEventCallbackGo(e, info_slice, tag);
 }
 

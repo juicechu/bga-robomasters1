@@ -3,10 +3,10 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"io/ioutil"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
@@ -19,7 +19,6 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
-	ub  *unitybridge.UnityBridge
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -43,7 +42,6 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		appId,
 		qrc,
 		pairing.NewListener(appId),
-		nil,
 	}, nil
 }
 
@@ -59,32 +57,31 @@ func (a *App) Start(textMode bool) error {
 	}
 
 	// Setup Unity Bridge.
-	ub, err := unitybridge.New("Robomaster", true)
-	if err != nil {
-		return err
+	if !bridge.IsSetup() {
+		bridge.Setup("Robomaster", true)
 	}
 
-	a.ub = ub
+	ub := bridge.Instance()
 
 	// Start listening to AirlinkConnection events.
-	err = a.ub.SendEvent(unity.NewEventWithSubType(
+	err = ub.SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeStartListening, 117440513))
 	if err != nil {
 		panic(err)
 	}
 
 	// Reset connection to defaults.
-	err = a.ub.SendEvent(unity.NewEventWithSubType(
+	err = ub.SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeConnection, 2), "192.168.2.1")
 	if err != nil {
 		panic(err)
 	}
-	err = a.ub.SendEvent(unity.NewEventWithSubType(
+	err = ub.SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeConnection, 3), uint64(10607))
 	if err != nil {
 		panic(err)
 	}
-	err = a.ub.SendEvent(unity.NewEvent(unity.EventTypeConnection))
+	err = ub.SendEvent(unity.NewEvent(unity.EventTypeConnection))
 	if err != nil {
 		panic(err)
 	}
@@ -103,24 +100,24 @@ L:
 			}
 
 			if event.Type() == pairing.EventAdd {
-				err = a.ub.SendEvent(unity.NewEventWithSubType(
+				err = ub.SendEvent(unity.NewEventWithSubType(
 					unity.EventTypeConnection, 1))
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent(unity.NewEventWithSubType(
+				err = ub.SendEvent(unity.NewEventWithSubType(
 					unity.EventTypeConnection, 2),
 					event.IP().String())
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent(unity.NewEventWithSubType(
+				err = ub.SendEvent(unity.NewEventWithSubType(
 					unity.EventTypeConnection, 3),
 					uint64(10607))
 				if err != nil {
 					panic(err)
 				}
-				err = a.ub.SendEvent(unity.NewEvent(
+				err = ub.SendEvent(unity.NewEvent(
 					unity.EventTypeConnection))
 				if err != nil {
 					panic(err)

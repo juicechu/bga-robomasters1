@@ -48,6 +48,16 @@ func NewEventFromCode(code uint64) *Event {
 	}
 }
 
+// Type returns the type associated with this event.
+func (e *Event) Type() EventType {
+	return e.typ
+}
+
+// SubType returns the subtype associated with this event.
+func (e *Event) SubType() uint64 {
+	return e.subTyp
+}
+
 // Code returns the uint64 code associated with this Event.
 func (e *Event) Code() uint64 {
 	return (uint64(e.typ) << 32) | e.subTyp
