@@ -3,9 +3,9 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"io/ioutil"
-	"log"
 	"net"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
@@ -21,6 +21,7 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
+	cc	*dji.CommandController
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -40,10 +41,16 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		return nil, err
 	}
 
+	cc, err := dji.NewCommandController()
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		appId,
 		qrc,
 		pairing.NewListener(appId),
+		cc,
 	}, nil
 }
 
@@ -65,28 +72,13 @@ func (a *App) Start(textMode bool) error {
 
 	ub := bridge.Instance()
 
-	// HACK!
 	connectingIP := net.IP{}
 
-	// Start listening to AirlinkConnection events.
-	event := unity.NewEventWithSubType(
-		unity.EventTypeStartListening, 117440513)
-	var index int
-	index, err = ub.AddEventHandler(event,
-		func(event *unity.Event, info []byte, tag uint64) {
-			// HACK! Should parse info (which is JSON) and
-			// check result.
+	a.cc.StartListening(dji.KeyAirLinkConnection, func(result *dji.Result) {
+		if result.Value().(bool) {
 			a.pl.SendACK(connectingIP)
-			err := ub.RemoveEventHandler(event, index)
-			if err != nil {
-				log.Println(err)
-			}
-		})
-	err = ub.SendEvent(unity.NewEventWithSubType(
-		unity.EventTypeStartListening, 117440513))
-	if err != nil {
-		panic(err)
-	}
+		}
+	})
 
 	// Reset connection to defaults.
 	err = ub.SendEvent(unity.NewEventWithSubType(

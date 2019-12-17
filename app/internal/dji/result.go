@@ -13,6 +13,26 @@ type Result struct {
 	errorDescription string
 }
 
+func (r Result) ErrorDescription() string {
+	return r.errorDescription
+}
+
+func (r Result) ErrorCode() int64 {
+	return r.errorCode
+}
+
+func (r Result) Value() interface{} {
+	return r.value
+}
+
+func (r Result) SequenceNumber() uint32 {
+	return r.sequenceNumber
+}
+
+func (r Result) Key() Key {
+	return r.key
+}
+
 type jsonResult struct {
 	Error int64
 	Key int

@@ -13,7 +13,9 @@ import (
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
 )
 
-type EventHandler func(event *unity.Event, info []byte, tag uint64)
+type EventHandler interface{
+	HandleEvent(event *unity.Event, info []byte, tag uint64)
+}
 
 type unityBridge struct {
 	m sync.Mutex
@@ -92,16 +94,14 @@ func Instance() *unityBridge {
 }
 
 // AddEventHandler adds an event handler for the given event.
-func (b *unityBridge) AddEventHandler(event *unity.Event,
+func (b *unityBridge) AddEventHandler(eventType unity.EventType,
 		eventHandler EventHandler) (int, error) {
-	if event == nil {
-		return -1, fmt.Errorf("event must not be nil")
+	if !unity.IsValidEventType(eventType) {
+		return -1, fmt.Errorf("invalid event type")
 	}
 	if eventHandler == nil {
 		return -1, fmt.Errorf("eventHandler must not be nil")
 	}
-
-	eventType := event.Type()
 
 	b.me.Lock()
 	defer b.me.Unlock()
@@ -127,15 +127,13 @@ func (b *unityBridge) AddEventHandler(event *unity.Event,
 
 // RemoveEventHandler removes the event handler at the given index for the
 // given event.
-func (b *unityBridge) RemoveEventHandler(event *unity.Event, index int) error {
-	if event == nil {
-		return fmt.Errorf("event must not be nil")
+func (b *unityBridge) RemoveEventHandler(eventType unity.EventType, index int) error {
+	if !unity.IsValidEventType(eventType) {
+		return fmt.Errorf("invalid event type")
 	}
 	if index < 0 {
 		return fmt.Errorf("index must be non-negative")
 	}
-
-	eventType := event.Type()
 
 	b.me.Lock()
 	defer b.me.Unlock()
@@ -242,6 +240,6 @@ func unityEventCallbackGo(eventCode uint64, info []byte, tag uint64) {
 	}
 
 	for _, handler := range eventHandlers {
-		go handler(event, info, tag)
+		go handler.HandleEvent(event, info, tag)
 	}
 }
