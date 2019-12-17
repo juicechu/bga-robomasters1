@@ -21,7 +21,8 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
-	cc	*dji.CommandController
+	cc  *dji.CommandController
+	vc  *dji.VideoController
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -46,11 +47,17 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		return nil, err
 	}
 
+	vc, err := dji.NewVideoController()
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		appId,
 		qrc,
 		pairing.NewListener(appId),
 		cc,
+		vc,
 	}, nil
 }
 
@@ -77,6 +84,8 @@ func (a *App) Start(textMode bool) error {
 	a.cc.StartListening(dji.KeyAirLinkConnection, func(result *dji.Result) {
 		if result.Value().(bool) {
 			a.pl.SendACK(connectingIP)
+
+			a.vc.StartVideo()
 		}
 	})
 
