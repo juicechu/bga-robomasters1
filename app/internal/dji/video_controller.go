@@ -2,13 +2,20 @@ package dji
 
 import (
 	"fmt"
+	"image"
+	"image/png"
+	"os"
+	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
 )
 
 type VideoController struct {
 	eventHandlerIndexes []int
+
+	once sync.Once
 }
 
 func NewVideoController() (*VideoController, error) {
@@ -56,4 +63,28 @@ func (v *VideoController) HandleEvent(event *unity.Event, info []byte,
 	tag uint64) {
 	fmt.Printf("%s, %#+v, %d\n", unity.EventTypeName(event.Type()), info,
 		tag)
+
+	if event.Type() == unity.EventTypeVideoDataRecv {
+		v.once.Do(func() {
+			rgbImage := &rgb.Image{
+				Pix:    info,
+				Stride: 3 * 1280,
+				Rect:   image.Rect(0, 0, 1280, 720),
+			}
+
+			f, err := os.Create("image.png")
+			if err != nil {
+				panic(err)
+			}
+
+			if err := png.Encode(f, rgbImage); err != nil {
+				f.Close()
+				panic(err)
+			}
+
+			if err := f.Close(); err != nil {
+				panic(err)
+			}
+		})
+	}
 }
