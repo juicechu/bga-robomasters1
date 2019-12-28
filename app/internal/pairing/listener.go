@@ -102,8 +102,6 @@ func (l *Listener) maybeGenerateEvent(ip net.IP, data []byte) *Event {
 		return nil
 	}
 
-	logger.Printf("Broadcast message successfully parsed: %s", bm)
-
 	l.m.Lock()
 	defer l.m.Unlock()
 
