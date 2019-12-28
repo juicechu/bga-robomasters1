@@ -231,7 +231,7 @@ func (b *unityBridge) unityEventCallback(eventCode uint64, info []byte, tag uint
 		return
 	}
 
-	eventHandlers, ok := instance.eventHandlerMap[event.Type()]
+	eventHandlers, ok := b.eventHandlerMap[event.Type()]
 	if !ok {
 		log.Printf("No event handlers for %q\n",
 			unity.EventTypeName(event.Type()))

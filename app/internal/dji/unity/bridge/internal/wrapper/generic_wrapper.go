@@ -14,11 +14,13 @@ func newGeneric(parent Wrapper) *generic {
 
 func (g *generic) UnitySetEventCallback(eventCode uint64,
 	eventCallback EventCallback) {
+	eventType := eventCode >> 32
+
 	add := false
 	if eventCallback == nil {
-		delete(g.callbacks, eventCode)
+		delete(g.callbacks, eventType)
 	} else {
-		g.callbacks[eventCode] = eventCallback
+		g.callbacks[eventType] = eventCallback
 		add = true
 	}
 
@@ -26,7 +28,9 @@ func (g *generic) UnitySetEventCallback(eventCode uint64,
 }
 
 func (g *generic) Callback(eventCode uint64) EventCallback {
-	cb, ok := g.callbacks[eventCode]
+	eventType := eventCode >> 32
+
+	cb, ok := g.callbacks[eventType]
 	if !ok {
 		return nil
 	}

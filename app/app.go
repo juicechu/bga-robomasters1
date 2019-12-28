@@ -143,8 +143,6 @@ L:
 					panic(err)
 				}
 			}
-
-			fmt.Printf("%#+v\n", pairingEvent)
 		}
 	}
 

@@ -61,9 +61,6 @@ func (v *VideoController) StopVideo() {
 
 func (v *VideoController) HandleEvent(event *unity.Event, info []byte,
 	tag uint64) {
-	fmt.Printf("%s, %#+v, %d\n", unity.EventTypeName(event.Type()), info,
-		tag)
-
 	if event.Type() == unity.EventTypeVideoDataRecv {
 		v.once.Do(func() {
 			rgbImage := &rgb.Image{
