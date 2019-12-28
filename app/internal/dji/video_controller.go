@@ -1,7 +1,6 @@
 package dji
 
 import (
-	"fmt"
 	"image"
 	"image/png"
 	"os"
