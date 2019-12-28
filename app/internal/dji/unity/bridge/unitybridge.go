@@ -1,9 +1,5 @@
 package bridge
 
-/*
-#include "unitybridge_event_callback.h"
-*/
-import "C"
 import (
 	"fmt"
 	"log"
@@ -13,20 +9,21 @@ import (
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
 )
 
-type EventHandler interface{
+type EventHandler interface {
 	HandleEvent(event *unity.Event, info []byte, tag uint64)
 }
 
 type unityBridge struct {
-	m sync.Mutex
+	m     sync.Mutex
 	setup bool
 
-	me sync.Mutex
+	me              sync.Mutex
 	eventHandlerMap map[unity.EventType]map[int]EventHandler
 }
 
 var (
-	instance *unityBridge
+	instance        *unityBridge
+	wrapperInstance wrapper.Wrapper
 )
 
 func init() {
@@ -36,6 +33,8 @@ func init() {
 		sync.Mutex{},
 		make(map[unity.EventType]map[int]EventHandler),
 	}
+
+	wrapperInstance = wrapper.Instance()
 }
 
 // Setup creates and initializes the unity bridge. It returns a nil error on
@@ -48,12 +47,12 @@ func Setup(name string, debuggable bool) error {
 		return fmt.Errorf("unity bridge manager already setup")
 	}
 
-	wrapper.CreateUnityBridge(name, debuggable)
+	wrapperInstance.CreateUnityBridge(name, debuggable)
 
 	instance.registerCallback()
 
-	if !wrapper.UnityBridgeInitialize() {
-		wrapper.DestroyUnityBridge()
+	if !wrapperInstance.UnityBridgeInitialize() {
+		wrapperInstance.DestroyUnityBridge()
 		return fmt.Errorf("unity bridge initialization failed")
 	}
 
@@ -74,8 +73,8 @@ func Teardown() error {
 
 	instance.unregisterCallback()
 
-	wrapper.UnityBridgeUninitialize()
-	wrapper.DestroyUnityBridge()
+	wrapperInstance.UnityBridgeUninitialize()
+	wrapperInstance.DestroyUnityBridge()
 
 	instance.setup = false
 
@@ -95,7 +94,7 @@ func Instance() *unityBridge {
 
 // AddEventHandler adds an event handler for the given event.
 func (b *unityBridge) AddEventHandler(eventType unity.EventType,
-		eventHandler EventHandler) (int, error) {
+	eventHandler EventHandler) (int, error) {
 	if !unity.IsValidEventType(eventType) {
 		return -1, fmt.Errorf("invalid event type")
 	}
@@ -112,7 +111,7 @@ func (b *unityBridge) AddEventHandler(eventType unity.EventType,
 	}
 
 	var i int
-	for i = 0;; i++ {
+	for i = 0; ; i++ {
 		_, ok := handlerMap[i]
 		if !ok {
 			handlerMap[i] = eventHandler
@@ -139,7 +138,7 @@ func (b *unityBridge) RemoveEventHandler(eventType unity.EventType, index int) e
 	defer b.me.Unlock()
 
 	handlerMap, ok := b.eventHandlerMap[eventType]
-	if ! ok {
+	if !ok {
 		return fmt.Errorf("no handlers for given event")
 	}
 
@@ -197,14 +196,14 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 	switch dataType {
 	case 0:
 		if data != nil {
-			wrapper.UnitySendEvent(event.Code(), data.([]byte), tag)
+			wrapperInstance.UnitySendEvent(event.Code(), data.([]byte), tag)
 		} else {
-			wrapper.UnitySendEvent(event.Code(), nil, tag)
+			wrapperInstance.UnitySendEvent(event.Code(), nil, tag)
 		}
 	case 1:
-		wrapper.UnitySendEventWithString(event.Code(), data.(string), tag)
+		wrapperInstance.UnitySendEventWithString(event.Code(), data.(string), tag)
 	case 2:
-		wrapper.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
+		wrapperInstance.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
 	}
 
 	return nil
@@ -213,20 +212,19 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 func (b *unityBridge) registerCallback() {
 	for _, eventType := range unity.AllEventTypes() {
 		event := unity.NewEvent(eventType)
-		wrapper.UnitySetEventCallback(event.Code(),
-			wrapper.UnityEventCallbackFunc(C.UnityEventCallback))
+		wrapperInstance.UnitySetEventCallback(event.Code(),
+			b.unityEventCallback)
 	}
 }
 
 func (b *unityBridge) unregisterCallback() {
 	for _, eventType := range unity.AllEventTypes() {
 		event := unity.NewEvent(eventType)
-		wrapper.UnitySetEventCallback(event.Code(), nil)
+		wrapperInstance.UnitySetEventCallback(event.Code(), nil)
 	}
 }
 
-//export unityEventCallbackGo
-func unityEventCallbackGo(eventCode uint64, info []byte, tag uint64) {
+func (b *unityBridge) unityEventCallback(eventCode uint64, info []byte, tag uint64) {
 	event := unity.NewEventFromCode(eventCode)
 	if event == nil {
 		log.Printf("Unknown event with code %d.\n", eventCode)
