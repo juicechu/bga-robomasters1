@@ -13,7 +13,7 @@ type EventHandler func(result *Result)
 type CommandController struct {
 	eventHandlerIndexes []int
 
-	mslm sync.Mutex
+	mslm              sync.Mutex
 	startListeningMap map[Key]map[int]EventHandler
 }
 
@@ -77,7 +77,7 @@ func (c *CommandController) StartListening(key Key, eventHandler EventHandler) (
 	}
 
 	var i int
-	for i = 0;; i++ {
+	for i = 0; ; i++ {
 		_, ok := handlerMap[i]
 		if !ok {
 			handlerMap[i] = eventHandler
@@ -126,10 +126,11 @@ func (c *CommandController) StopListening(key Key, index int) error {
 	return nil
 }
 
-func (c *CommandController) HandleEvent(event *unity.Event, info []byte, tag uint64) {
+func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
+	tag uint64, wg *sync.WaitGroup) {
 	var value interface{}
 
-	infoType :=  (tag >> 56) & 0xff
+	infoType := (tag >> 56) & 0xff
 	switch infoType {
 	case 0:
 		value = string(info)
@@ -146,6 +147,8 @@ func (c *CommandController) HandleEvent(event *unity.Event, info []byte, tag uin
 		panic(fmt.Sprintf("Event %s support not implemented.",
 			unity.EventTypeName(event.Type())))
 	}
+
+	wg.Done()
 }
 
 func (c *CommandController) handleStartListening(value interface{}, tag uint64) {
@@ -184,4 +187,3 @@ func (c *CommandController) Teardown() error {
 
 	return nil
 }
-

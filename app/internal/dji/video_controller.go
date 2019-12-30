@@ -59,7 +59,7 @@ func (v *VideoController) StopVideo() {
 }
 
 func (v *VideoController) HandleEvent(event *unity.Event, info []byte,
-	tag uint64) {
+	tag uint64, wg *sync.WaitGroup) {
 	if event.Type() == unity.EventTypeVideoDataRecv {
 		v.once.Do(func() {
 			rgbImage := &rgb.Image{
@@ -83,4 +83,6 @@ func (v *VideoController) HandleEvent(event *unity.Event, info []byte,
 			}
 		})
 	}
+
+	wg.Done()
 }

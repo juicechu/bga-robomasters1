@@ -10,7 +10,8 @@ import (
 )
 
 type EventHandler interface {
-	HandleEvent(event *unity.Event, info []byte, tag uint64)
+	HandleEvent(event *unity.Event, info []byte, tag uint64,
+		wg *sync.WaitGroup)
 }
 
 type unityBridge struct {
@@ -237,7 +238,12 @@ func (b *unityBridge) unityEventCallback(eventCode uint64, info []byte, tag uint
 			unity.EventTypeName(event.Type()))
 	}
 
+	wg := sync.WaitGroup{}
+
 	for _, handler := range eventHandlers {
-		go handler.HandleEvent(event, info, tag)
+		wg.Add(1)
+		go handler.HandleEvent(event, info, tag, &wg)
 	}
+
+	wg.Wait()
 }
