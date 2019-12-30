@@ -2,6 +2,7 @@ package dji
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
@@ -122,6 +123,36 @@ func (c *CommandController) StopListening(key Key, index int) error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (c *CommandController) PerformAction(key Key, param interface{},
+	eventHandler EventHandler) error {
+	if key < 1 || key >= KeysCount {
+		return fmt.Errorf("invalid key")
+	}
+	if (key.AccessType() & KeyAccessTypeAction) == 0 {
+		return fmt.Errorf("key can not be acted upon")
+	}
+
+	if eventHandler != nil {
+		// TODO(bga): Fix this.
+		panic("No event handler support in PerformAction.")
+	}
+
+	var data []byte
+	if param != nil {
+		var err error
+		data, err = json.Marshal(param)
+		if err != nil {
+			return err
+		}
+	}
+
+	bridge.Instance().SendEvent(unity.NewEventWithSubType(
+		unity.EventTypePerformAction, uint64(key.Value())), data,
+		uint64(key.Value()))
 
 	return nil
 }
