@@ -7,6 +7,8 @@ type Key int
 const (
 	KeyNone Key = iota
 	KeyAirLinkConnection
+	KeyGimbalAngleFrontYawRotation
+	KeyGimbalAngleFrontPitchRotation
 	KeysCount
 	// TODO(bga): Add keys here as needed.
 )
@@ -15,6 +17,7 @@ type DataType int
 
 const (
 	KeyDataTypeBool DataType = iota
+	KeyDataTypeAbsoluteRotationParameter
 	// TODO(bga): Add data types here as needed.
 )
 
@@ -40,20 +43,29 @@ func (k Key) AccessType() AccessType {
 }
 
 type keyAttributes struct {
-	value uint32
-	dataType DataType
+	value      uint32
+	dataType   DataType
 	accessType AccessType
 }
 
 var (
 	keyAttributeMap = map[Key]keyAttributes{
-		KeyAirLinkConnection: keyAttributes{117440513, KeyDataTypeBool, KeyAccessTypeRead},
-	// TODO(bga): Add other attributes here as needed. Needs to be kept in sync
-	// 	with existing Keys.
+		KeyAirLinkConnection: keyAttributes{117440513, KeyDataTypeBool,
+			KeyAccessTypeRead},
+		KeyGimbalAngleFrontYawRotation: keyAttributes{67108876,
+			KeyDataTypeAbsoluteRotationParameter,
+			KeyAccessTypeAction},
+		KeyGimbalAngleFrontPitchRotation: keyAttributes{67108877,
+			KeyDataTypeAbsoluteRotationParameter,
+			KeyAccessTypeAction},
+		// TODO(bga): Add other attributes here as needed. Needs to be kept in
+		// 	sync with existing Keys.
 	}
 
 	keyByValueMap = map[int]Key{
 		117440513: KeyAirLinkConnection,
+		67108876:  KeyGimbalAngleFrontYawRotation,
+		67108877:  KeyGimbalAngleFrontPitchRotation,
 	}
 )
 
