@@ -7,6 +7,7 @@ type Key int
 const (
 	KeyNone Key = iota
 	KeyAirLinkConnection
+	KeyGimbalResetPosition
 	KeyGimbalAngleFrontYawRotation
 	KeyGimbalAngleFrontPitchRotation
 	KeysCount
@@ -17,6 +18,7 @@ type DataType int
 
 const (
 	KeyDataTypeBool DataType = iota
+	KeyDataTypeLong
 	KeyDataTypeAbsoluteRotationParameter
 	// TODO(bga): Add data types here as needed.
 )
@@ -52,6 +54,8 @@ var (
 	keyAttributeMap = map[Key]keyAttributes{
 		KeyAirLinkConnection: keyAttributes{117440513, KeyDataTypeBool,
 			KeyAccessTypeRead},
+		KeyGimbalResetPosition: keyAttributes{67108870, KeyDataTypeLong,
+			KeyAccessTypeAction},
 		KeyGimbalAngleFrontYawRotation: keyAttributes{67108876,
 			KeyDataTypeAbsoluteRotationParameter,
 			KeyAccessTypeAction},
@@ -64,6 +68,7 @@ var (
 
 	keyByValueMap = map[int]Key{
 		117440513: KeyAirLinkConnection,
+		67108870:  KeyGimbalResetPosition,
 		67108876:  KeyGimbalAngleFrontYawRotation,
 		67108877:  KeyGimbalAngleFrontPitchRotation,
 	}
