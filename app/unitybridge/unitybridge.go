@@ -1,4 +1,4 @@
-package bridge
+package unitybridge
 
 import (
 	"fmt"
@@ -6,14 +6,18 @@ import (
 	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
+	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper"
 )
 
+// EventHandler is the required interface for types that want to listen to Unity
+// Events. Implementations are required to call wg.Done() before they return.
 type EventHandler interface {
-	HandleEvent(event *unity.Event, info []byte, tag uint64,
+	HandleEvent(event *unity.Event, data []byte, tag uint64,
 		wg *sync.WaitGroup)
 }
 
+// unityBridge is a frontend to DJI's Unity Bridge code. The type is not
+// exported because it is currently implemented as a singleton.
 type unityBridge struct {
 	m     sync.Mutex
 	setup bool
@@ -23,11 +27,14 @@ type unityBridge struct {
 }
 
 var (
-	instance        *unityBridge
+	// Singleton instance.
+	instance *unityBridge
+
 	wrapperInstance wrapper.Wrapper
 )
 
 func init() {
+	// Creates the singleton instance.
 	instance = &unityBridge{
 		sync.Mutex{},
 		false,
@@ -38,23 +45,26 @@ func init() {
 	wrapperInstance = wrapper.Instance()
 }
 
-// Setup creates and initializes the unity bridge. It returns a nil error on
-// success and a non-nil error on failure.
+// Setup creates and initializes the underlying Unity Bridge. It returns a nil
+// error on success and a non-nil error on failure.
 func Setup(name string, debuggable bool) error {
 	instance.m.Lock()
 	defer instance.m.Unlock()
 
 	if instance.setup {
-		return fmt.Errorf("unity bridge manager already setup")
+		return fmt.Errorf("unitybridge already setup")
 	}
 
+	// Creates the underlying Unity Bridge.
 	wrapperInstance.CreateUnityBridge(name, debuggable)
 
+	// Register the callback to all known events.
 	instance.registerCallback()
 
 	if !wrapperInstance.UnityBridgeInitialize() {
+		// Something went wrong so we bail out.
 		wrapperInstance.DestroyUnityBridge()
-		return fmt.Errorf("unity bridge initialization failed")
+		return fmt.Errorf("unitybridge initialization failed")
 	}
 
 	instance.setup = true
@@ -62,16 +72,17 @@ func Setup(name string, debuggable bool) error {
 	return nil
 }
 
-// Teardown uninitializes and destroys the unity bridge. It returns a nil error
-// on success and a non-nil error on failure.
+// Teardown uninitializes and destroys the underlying Unity Bridge. It returns
+// a nil error on success and a non-nil error on failure.
 func Teardown() error {
 	instance.m.Lock()
 	defer instance.m.Unlock()
 
 	if instance.setup {
-		return fmt.Errorf("unity bridge manager not setup")
+		return fmt.Errorf("unitybridge not setup")
 	}
 
+	// Unregister the callback to all known events.
 	instance.unregisterCallback()
 
 	wrapperInstance.UnityBridgeUninitialize()
@@ -82,13 +93,16 @@ func Teardown() error {
 	return nil
 }
 
-// IsSetup returns true if the unity bridge support was setup and false
-// otherwise.
+// IsSetup returns true if the underlying Unity Bridge support was setup and
+// false otherwise.
 func IsSetup() bool {
+	instance.m.Lock()
+	defer instance.m.Unlock()
+
 	return instance.setup
 }
 
-// Instance returns a pointer to to unity bridge.
+// Instance returns a pointer to the unityBridge singleton.
 func Instance() *unityBridge {
 	return instance
 }
@@ -150,10 +164,14 @@ func (b *unityBridge) RemoveEventHandler(eventType unity.EventType, index int) e
 
 	delete(handlerMap, index)
 
+	if len(handlerMap) == 0 {
+		delete(b.eventHandlerMap, eventType)
+	}
+
 	return nil
 }
 
-// SendEvent sends a unity event through the underlying unity bridge. It can
+// SendEvent sends a unity event through the underlying Unity Bridge. It can
 // accept one, two or three parameters. The first one is the event itself and
 // must be a *unity.Event. The second one is the data to send associated with
 // the event and can be a []byte, a string or a uint64. The third one is the
@@ -225,7 +243,7 @@ func (b *unityBridge) unregisterCallback() {
 	}
 }
 
-func (b *unityBridge) unityEventCallback(eventCode uint64, info []byte, tag uint64) {
+func (b *unityBridge) unityEventCallback(eventCode uint64, data []byte, tag uint64) {
 	event := unity.NewEventFromCode(eventCode)
 	if event == nil {
 		log.Printf("Unknown event with code %d.\n", eventCode)
@@ -236,13 +254,14 @@ func (b *unityBridge) unityEventCallback(eventCode uint64, info []byte, tag uint
 	if !ok {
 		log.Printf("No event handlers for %q\n",
 			unity.EventTypeName(event.Type()))
+		return
 	}
 
 	wg := sync.WaitGroup{}
 
 	for _, handler := range eventHandlers {
 		wg.Add(1)
-		go handler.HandleEvent(event, info, tag, &wg)
+		go handler.HandleEvent(event, data, tag, &wg)
 	}
 
 	wg.Wait()

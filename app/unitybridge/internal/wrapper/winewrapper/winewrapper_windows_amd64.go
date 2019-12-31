@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper/winebridge"
 	"io"
 	"os"
 
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper/winebridge"
+	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper"
 )
 
 var (

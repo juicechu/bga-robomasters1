@@ -2,11 +2,10 @@ package wrapper
 
 import (
 	"encoding/binary"
+	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper/winebridge"
 	"io"
 	"log"
 	"os"
-
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper/winebridge"
 )
 
 type Linux struct {

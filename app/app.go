@@ -3,8 +3,8 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"io/ioutil"
 	"net"
 
@@ -73,11 +73,11 @@ func (a *App) Start(textMode bool) error {
 	}
 
 	// Setup Unity Bridge.
-	if !bridge.IsSetup() {
-		bridge.Setup("Robomaster", true)
+	if !unitybridge.IsSetup() {
+		unitybridge.Setup("Robomaster", true)
 	}
 
-	ub := bridge.Instance()
+	ub := unitybridge.Instance()
 
 	connectingIP := net.IP{}
 
