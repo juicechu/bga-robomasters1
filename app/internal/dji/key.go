@@ -7,9 +7,12 @@ type Key int
 const (
 	KeyNone Key = iota
 	KeyAirLinkConnection
-	KeyGimbalResetPosition
 	KeyGimbalAngleFrontYawRotation
 	KeyGimbalAngleFrontPitchRotation
+	KeyGimbalConnection
+	KeyGimbalOpenAttitudeUpdates
+	KeyGimbalResetPosition
+	KeyRobomasterOpenChassisSpeedUpdates
 	KeysCount
 	// TODO(bga): Add keys here as needed.
 )
@@ -20,6 +23,7 @@ const (
 	KeyDataTypeBool DataType = iota
 	KeyDataTypeLong
 	KeyDataTypeAbsoluteRotationParameter
+	KeyDataTypeVoid
 	// TODO(bga): Add data types here as needed.
 )
 
@@ -54,13 +58,19 @@ var (
 	keyAttributeMap = map[Key]keyAttributes{
 		KeyAirLinkConnection: keyAttributes{117440513, KeyDataTypeBool,
 			KeyAccessTypeRead},
-		KeyGimbalResetPosition: keyAttributes{67108870, KeyDataTypeLong,
-			KeyAccessTypeAction},
+		KeyGimbalConnection: keyAttributes{67108865, KeyDataTypeBool,
+			KeyAccessTypeRead},
 		KeyGimbalAngleFrontYawRotation: keyAttributes{67108876,
 			KeyDataTypeAbsoluteRotationParameter,
 			KeyAccessTypeAction},
 		KeyGimbalAngleFrontPitchRotation: keyAttributes{67108877,
 			KeyDataTypeAbsoluteRotationParameter,
+			KeyAccessTypeAction},
+		KeyGimbalOpenAttitudeUpdates: keyAttributes{67108882, KeyDataTypeVoid,
+			KeyAccessTypeAction},
+		KeyGimbalResetPosition: keyAttributes{67108870, KeyDataTypeLong,
+			KeyAccessTypeAction},
+		KeyRobomasterOpenChassisSpeedUpdates: keyAttributes{33554474, KeyDataTypeVoid,
 			KeyAccessTypeAction},
 		// TODO(bga): Add other attributes here as needed. Needs to be kept in
 		// 	sync with existing Keys.
@@ -68,9 +78,12 @@ var (
 
 	keyByValueMap = map[int]Key{
 		117440513: KeyAirLinkConnection,
-		67108870:  KeyGimbalResetPosition,
+		67108865:  KeyGimbalConnection,
 		67108876:  KeyGimbalAngleFrontYawRotation,
 		67108877:  KeyGimbalAngleFrontPitchRotation,
+		67108882:  KeyGimbalOpenAttitudeUpdates,
+		67108870:  KeyGimbalResetPosition,
+		33554474:  KeyRobomasterOpenChassisSpeedUpdates,
 	}
 )
 
