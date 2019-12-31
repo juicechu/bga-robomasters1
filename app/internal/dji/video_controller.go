@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"git.bug-br.org.br/bga/robomasters1/app/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
 )
 
@@ -18,7 +18,7 @@ type VideoController struct {
 }
 
 func NewVideoController() (*VideoController, error) {
-	b := unitybridge.Instance()
+	b := bridge.Instance()
 
 	vc := &VideoController{}
 
@@ -47,13 +47,13 @@ func NewVideoController() (*VideoController, error) {
 }
 
 func (v *VideoController) StartVideo() {
-	ub := unitybridge.Instance()
+	ub := bridge.Instance()
 
 	ub.SendEvent(unity.NewEvent(unity.EventTypeStartVideo))
 }
 
 func (v *VideoController) StopVideo() {
-	ub := unitybridge.Instance()
+	ub := bridge.Instance()
 
 	ub.SendEvent(unity.NewEvent(unity.EventTypeStopVideo))
 }

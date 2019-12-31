@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"git.bug-br.org.br/bga/robomasters1/app/unitybridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"log"
 	"sync"
 )
@@ -20,7 +20,7 @@ type CommandController struct {
 }
 
 func NewCommandController() (*CommandController, error) {
-	b := unitybridge.Instance()
+	b := bridge.Instance()
 
 	cc := &CommandController{
 		startListeningMap: make(map[Key]map[int]EventHandler),
@@ -71,7 +71,7 @@ func (c *CommandController) StartListening(key Key, eventHandler EventHandler) (
 	}
 
 	if len(handlerMap) == 0 {
-		err := unitybridge.Instance().SendEvent(unity.NewEventWithSubType(
+		err := bridge.Instance().SendEvent(unity.NewEventWithSubType(
 			unity.EventTypeStartListening, uint64(key.Value())))
 		if err != nil {
 			return -1, err
@@ -118,7 +118,7 @@ func (c *CommandController) StopListening(key Key, index int) error {
 	if len(handlerMap) == 0 {
 		delete(c.startListeningMap, key)
 
-		err := unitybridge.Instance().SendEvent(unity.NewEventWithSubType(
+		err := bridge.Instance().SendEvent(unity.NewEventWithSubType(
 			unity.EventTypeStopListening, uint64(key.Value())))
 		if err != nil {
 			return err
@@ -151,7 +151,7 @@ func (c *CommandController) PerformAction(key Key, param interface{},
 		}
 	}
 
-	unitybridge.Instance().SendEvent(unity.NewEventWithSubType(
+	bridge.Instance().SendEvent(unity.NewEventWithSubType(
 		unity.EventTypePerformAction, uint64(key.Value())), data,
 		uint64(key.Value()))
 
@@ -197,7 +197,7 @@ func (c *CommandController) handleStartListening(value interface{}, tag uint64) 
 }
 
 func (c *CommandController) Teardown() error {
-	b := unitybridge.Instance()
+	b := bridge.Instance()
 
 	var err error
 	err = b.RemoveEventHandler(unity.EventTypeGetValue, c.eventHandlerIndexes[0])

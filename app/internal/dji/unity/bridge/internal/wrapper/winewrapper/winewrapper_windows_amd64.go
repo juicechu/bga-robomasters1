@@ -3,11 +3,10 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper/winebridge"
+	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
+	winebridge2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper/winebridge"
 	"io"
 	"os"
-
-	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper"
 )
 
 var (
@@ -16,11 +15,11 @@ var (
 	readBuffer  []byte
 	writeBuffer []byte
 
-	wrapperInstance wrapper.Wrapper
+	wrapperInstance wrapper2.Wrapper
 )
 
 func main() {
-	wineBridge, err := winebridge.New(2, os.Args[1:])
+	wineBridge, err := winebridge2.New(2, os.Args[1:])
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +28,7 @@ func main() {
 	writePipe = wineBridge.File(1)
 
 	// Initialize wrapper.
-	wrapperInstance = wrapper.Instance()
+	wrapperInstance = wrapper2.Instance()
 
 	lengthBuffer := make([]byte, 4)
 	for {
@@ -63,21 +62,21 @@ func processRead(readPipe io.Reader, length int) error {
 
 	function := sizedRequestBuffer[0]
 	switch function {
-	case wrapper.FuncCreateUnityBridge:
+	case wrapper2.FuncCreateUnityBridge:
 		runCreateUnityBridge(sizedRequestBuffer[1:])
-	case wrapper.FuncDestroyUnityBridge:
+	case wrapper2.FuncDestroyUnityBridge:
 		runDestroyUnityBridge()
-	case wrapper.FuncUnityBridgeInitialize:
+	case wrapper2.FuncUnityBridgeInitialize:
 		runUnityBridgeInitialize()
-	case wrapper.FuncUnityBridgeUninitialize:
+	case wrapper2.FuncUnityBridgeUninitialize:
 		runUnityBridgeUninitialize()
-	case wrapper.FuncUnitySetEventCallback:
+	case wrapper2.FuncUnitySetEventCallback:
 		runUnitySetEventCallback(sizedRequestBuffer[1:])
-	case wrapper.FuncUnitySendEvent:
+	case wrapper2.FuncUnitySendEvent:
 		runUnitySendEvent(sizedRequestBuffer[1:])
-	case wrapper.FuncUnitySendEventWithNumber:
+	case wrapper2.FuncUnitySendEventWithNumber:
 		runUnitySendEventWithNumber(sizedRequestBuffer[1:])
-	case wrapper.FuncUnitySendEventWithString:
+	case wrapper2.FuncUnitySendEventWithString:
 		runUnitySendEventWithString(sizedRequestBuffer[1:])
 	}
 

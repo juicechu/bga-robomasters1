@@ -1,12 +1,12 @@
-package unitybridge
+package bridge
 
 import (
 	"fmt"
+	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
 	"log"
 	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
-	"git.bug-br.org.br/bga/robomasters1/app/unitybridge/internal/wrapper"
 )
 
 // EventHandler is the required interface for types that want to listen to Unity
@@ -30,7 +30,7 @@ var (
 	// Singleton instance.
 	instance *unityBridge
 
-	wrapperInstance wrapper.Wrapper
+	wrapperInstance wrapper2.Wrapper
 )
 
 func init() {
@@ -42,7 +42,7 @@ func init() {
 		make(map[unity.EventType]map[int]EventHandler),
 	}
 
-	wrapperInstance = wrapper.Instance()
+	wrapperInstance = wrapper2.Instance()
 }
 
 // Setup creates and initializes the underlying Unity Bridge. It returns a nil
@@ -52,7 +52,7 @@ func Setup(name string, debuggable bool) error {
 	defer instance.m.Unlock()
 
 	if instance.setup {
-		return fmt.Errorf("unitybridge already setup")
+		return fmt.Errorf("bridge already setup")
 	}
 
 	// Creates the underlying Unity Bridge.
@@ -64,7 +64,7 @@ func Setup(name string, debuggable bool) error {
 	if !wrapperInstance.UnityBridgeInitialize() {
 		// Something went wrong so we bail out.
 		wrapperInstance.DestroyUnityBridge()
-		return fmt.Errorf("unitybridge initialization failed")
+		return fmt.Errorf("bridge initialization failed")
 	}
 
 	instance.setup = true
@@ -79,7 +79,7 @@ func Teardown() error {
 	defer instance.m.Unlock()
 
 	if instance.setup {
-		return fmt.Errorf("unitybridge not setup")
+		return fmt.Errorf("bridge not setup")
 	}
 
 	// Unregister the callback to all known events.
