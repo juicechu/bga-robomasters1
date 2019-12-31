@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
+	"log"
 	"sync"
 )
 
@@ -175,8 +176,8 @@ func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
 	case unity.EventTypeStartListening:
 		c.handleStartListening(value, tag)
 	default:
-		panic(fmt.Sprintf("Event %s support not implemented.",
-			unity.EventTypeName(event.Type())))
+		log.Printf("Unsupported event %s. Value:%v. Tag:%d\n",
+			unity.EventTypeName(event.Type()), value, tag)
 	}
 
 	wg.Done()
