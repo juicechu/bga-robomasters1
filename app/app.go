@@ -3,12 +3,12 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"io/ioutil"
 	"net"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/pairing"
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
