@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
-	winebridge2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper/winebridge"
+	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 	"io"
 	"os"
 )
@@ -19,7 +19,7 @@ var (
 )
 
 func main() {
-	wineBridge, err := winebridge2.New(2, os.Args[1:])
+	wineBridge, err := winebridge.New(2, os.Args[1:])
 	if err != nil {
 		panic(err)
 	}

@@ -14,40 +14,36 @@ import (
 type EventHandler func(result *dji.Result)
 
 type CommandController struct {
-	eventHandlerIndexes []int
+	*GenericController
 
 	mslm              sync.Mutex
 	startListeningMap map[dji.Key]map[int]EventHandler
 }
 
 func NewCommandController() (*CommandController, error) {
-	b := bridge.Instance()
-
 	cc := &CommandController{
 		startListeningMap: make(map[dji.Key]map[int]EventHandler),
 	}
 
-	eventHandlerIndexes := make([]int, 4)
+	cc.GenericController = NewGenericController(cc)
 
 	var err error
-	eventHandlerIndexes[0], err = b.AddEventHandler(unity.EventTypeGetValue, cc)
+	err = cc.StartControllingEvent(unity.EventTypeGetValue)
 	if err != nil {
 		return nil, err
 	}
-	eventHandlerIndexes[1], err = b.AddEventHandler(unity.EventTypeSetValue, cc)
+	err = cc.StartControllingEvent(unity.EventTypeSetValue)
 	if err != nil {
 		return nil, err
 	}
-	eventHandlerIndexes[2], err = b.AddEventHandler(unity.EventTypePerformAction, cc)
+	err = cc.StartControllingEvent(unity.EventTypePerformAction)
 	if err != nil {
 		return nil, err
 	}
-	eventHandlerIndexes[3], err = b.AddEventHandler(unity.EventTypeStartListening, cc)
+	err = cc.StartControllingEvent(unity.EventTypeStartListening)
 	if err != nil {
 		return nil, err
 	}
-
-	cc.eventHandlerIndexes = eventHandlerIndexes
 
 	return cc, nil
 }
@@ -198,22 +194,20 @@ func (c *CommandController) handleStartListening(value interface{}, tag uint64) 
 }
 
 func (c *CommandController) Teardown() error {
-	b := bridge.Instance()
-
 	var err error
-	err = b.RemoveEventHandler(unity.EventTypeGetValue, c.eventHandlerIndexes[0])
+	err = c.StopControllingEvent(unity.EventTypeGetValue)
 	if err != nil {
 		return err
 	}
-	err = b.RemoveEventHandler(unity.EventTypeSetValue, c.eventHandlerIndexes[1])
+	err = c.StopControllingEvent(unity.EventTypeSetValue)
 	if err != nil {
 		return err
 	}
-	err = b.RemoveEventHandler(unity.EventTypePerformAction, c.eventHandlerIndexes[2])
+	err = c.StopControllingEvent(unity.EventTypePerformAction)
 	if err != nil {
 		return err
 	}
-	err = b.RemoveEventHandler(unity.EventTypeStartListening, c.eventHandlerIndexes[3])
+	err = c.StopControllingEvent(unity.EventTypeStartListening)
 	if err != nil {
 		return err
 	}

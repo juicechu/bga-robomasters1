@@ -2,11 +2,11 @@ package bridge
 
 import (
 	"fmt"
-	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper"
 	"log"
 	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper"
 )
 
 // EventHandler is the required interface for types that want to listen to Unity
@@ -30,7 +30,7 @@ var (
 	// Singleton instance.
 	instance *unityBridge
 
-	wrapperInstance wrapper2.Wrapper
+	wrapperInstance wrapper.Wrapper
 )
 
 func init() {
@@ -42,7 +42,7 @@ func init() {
 		make(map[unity.EventType]map[int]EventHandler),
 	}
 
-	wrapperInstance = wrapper2.Instance()
+	wrapperInstance = wrapper.Instance()
 }
 
 // Setup creates and initializes the underlying Unity Bridge. It returns a nil

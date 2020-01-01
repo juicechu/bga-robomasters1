@@ -2,7 +2,7 @@ package wrapper
 
 import (
 	"encoding/binary"
-	winebridge2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/internal/wrapper/winebridge"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 	"io"
 	"log"
 	"os"
@@ -14,7 +14,7 @@ type Linux struct {
 	readPipe  io.Reader
 	writePipe io.Writer
 
-	wineBridge *winebridge2.WineBridge
+	wineBridge *winebridge.WineBridge
 }
 
 func Instance() Wrapper {
@@ -29,7 +29,7 @@ func Instance() Wrapper {
 			panic(err)
 		}
 
-		wineBridge, err := winebridge2.New("winewrapper.exe",
+		wineBridge, err := winebridge.New("winewrapper.exe",
 			remoteReadPipe, remoteWritePipe)
 
 		err = wineBridge.Start()

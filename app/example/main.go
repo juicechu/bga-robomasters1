@@ -2,8 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"fyne.io/fyne"
+	"image"
+	"sync"
+	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/app"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
+	"git.bug-br.org.br/bga/robomasters1/app/video"
+
+	fyneapp "fyne.io/fyne/app"
+	"fyne.io/fyne/canvas"
 )
 
 var (
@@ -13,10 +23,31 @@ var (
 	textMode = flag.Bool("textmode", false, "enable/disable text mode")
 	appID    = flag.Uint64("appid", 0, "if provided, use this app ID "+
 		"instead of creating a new one")
+
+	baseImg *rgb.Image
+	img     *canvas.Image
 )
 
 func main() {
 	flag.Parse()
+
+	fyneApp := fyneapp.New()
+	baseImg = rgb.NewImage(
+		image.Rectangle{
+			image.Point{0, 0},
+			image.Point{1280, 720},
+		},
+	)
+	img = canvas.NewImageFromImage(baseImg)
+	img.FillMode = canvas.ImageFillOriginal
+
+	w := fyneApp.NewWindow("Robomaster S1")
+	w.Resize(fyne.Size{
+		Width:  1280,
+		Height: 720,
+	})
+	w.CenterOnScreen()
+	w.SetContent(img)
 
 	var a *app.App
 	var err error
@@ -30,8 +61,37 @@ func main() {
 		panic(err)
 	}
 
-	err = a.Start(*textMode)
+	v, err := video.New()
 	if err != nil {
 		panic(err)
 	}
+
+	index, err := v.AddDataHandler(videoHandler)
+	if err != nil {
+		panic(err)
+	}
+	defer v.RemoveDataHandler(index)
+
+	go func() {
+		err = a.Start(*textMode)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// HACK! Fix this.
+	time.Sleep(1 * time.Second)
+
+	a.WaitForConnection()
+
+	v.StartVideo()
+
+	w.ShowAndRun()
+}
+
+func videoHandler(data []byte, wg *sync.WaitGroup) {
+	baseImg.Pix = data
+	img.Refresh()
+
+	wg.Done()
 }

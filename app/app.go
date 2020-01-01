@@ -3,10 +3,11 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
-	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"io/ioutil"
 	"net"
+	"sync"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
@@ -23,7 +24,8 @@ type App struct {
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
 	cc  *internal.CommandController
-	vc  *internal.VideoController
+
+	cm sync.Mutex
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -48,21 +50,18 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		return nil, err
 	}
 
-	vc, err := internal.NewVideoController()
-	if err != nil {
-		return nil, err
-	}
-
 	return &App{
 		appId,
 		qrc,
 		pairing.NewListener(appId),
 		cc,
-		vc,
+		sync.Mutex{},
 	}, nil
 }
 
 func (a *App) Start(textMode bool) error {
+	a.cm.Lock()
+
 	var err error
 	if textMode {
 		err = a.showTextQRCode()
@@ -85,8 +84,7 @@ func (a *App) Start(textMode bool) error {
 	a.cc.StartListening(dji.KeyAirLinkConnection, func(result *dji.Result) {
 		if result.Value().(bool) {
 			a.pl.SendACK(connectingIP)
-
-			a.vc.StartVideo()
+			a.cm.Unlock()
 		}
 	})
 
@@ -148,6 +146,15 @@ L:
 	}
 
 	return nil
+}
+
+func (a *App) WaitForConnection() {
+	a.cm.Lock()
+	defer a.cm.Unlock()
+}
+
+func (a *App) CommandController() *internal.CommandController {
+	return a.cc
 }
 
 func (a *App) showTextQRCode() error {
