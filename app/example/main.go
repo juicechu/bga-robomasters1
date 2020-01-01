@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"fyne.io/fyne"
 	"image"
 	"sync"
 	"time"
@@ -12,6 +10,7 @@ import (
 	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
 	"git.bug-br.org.br/bga/robomasters1/app/video"
 
+	"fyne.io/fyne"
 	fyneapp "fyne.io/fyne/app"
 	"fyne.io/fyne/canvas"
 )
