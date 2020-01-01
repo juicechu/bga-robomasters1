@@ -1,4 +1,4 @@
-package dji
+package internal
 
 import (
 	"image"

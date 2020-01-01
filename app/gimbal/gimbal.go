@@ -1,6 +1,7 @@
 package gimbal
 
 import (
+	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"sync"
 	"time"
 
@@ -8,10 +9,10 @@ import (
 )
 
 type Gimbal struct {
-	cc *dji.CommandController
+	cc *internal.CommandController
 }
 
-func New(cc *dji.CommandController) *Gimbal {
+func New(cc *internal.CommandController) *Gimbal {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	cc.StartListening(dji.KeyGimbalConnection, func(result *dji.Result) {

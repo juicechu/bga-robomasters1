@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/binary"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"io/ioutil"
 	"net"
 
@@ -21,8 +22,8 @@ type App struct {
 	id  uint64
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
-	cc  *dji.CommandController
-	vc  *dji.VideoController
+	cc  *internal.CommandController
+	vc  *internal.VideoController
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -42,12 +43,12 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		return nil, err
 	}
 
-	cc, err := dji.NewCommandController()
+	cc, err := internal.NewCommandController()
 	if err != nil {
 		return nil, err
 	}
 
-	vc, err := dji.NewVideoController()
+	vc, err := internal.NewVideoController()
 	if err != nil {
 		return nil, err
 	}

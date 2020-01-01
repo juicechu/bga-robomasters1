@@ -1,29 +1,30 @@
-package dji
+package internal
 
 import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
 	"log"
 	"sync"
 )
 
-type EventHandler func(result *Result)
+type EventHandler func(result *dji.Result)
 
 type CommandController struct {
 	eventHandlerIndexes []int
 
 	mslm              sync.Mutex
-	startListeningMap map[Key]map[int]EventHandler
+	startListeningMap map[dji.Key]map[int]EventHandler
 }
 
 func NewCommandController() (*CommandController, error) {
 	b := bridge.Instance()
 
 	cc := &CommandController{
-		startListeningMap: make(map[Key]map[int]EventHandler),
+		startListeningMap: make(map[dji.Key]map[int]EventHandler),
 	}
 
 	eventHandlerIndexes := make([]int, 4)
@@ -51,14 +52,14 @@ func NewCommandController() (*CommandController, error) {
 	return cc, nil
 }
 
-func (c *CommandController) StartListening(key Key, eventHandler EventHandler) (int, error) {
-	if key < 1 || key >= KeysCount {
+func (c *CommandController) StartListening(key dji.Key, eventHandler EventHandler) (int, error) {
+	if key < 1 || key >= dji.KeysCount {
 		return -1, fmt.Errorf("invalid key")
 	}
 	if eventHandler == nil {
 		return -1, fmt.Errorf("eventHandler must not be nil")
 	}
-	if (key.AccessType() & KeyAccessTypeRead) == 0 {
+	if (key.AccessType() & dji.KeyAccessTypeRead) == 0 {
 		return -1, fmt.Errorf("key is not readable")
 	}
 
@@ -92,8 +93,8 @@ func (c *CommandController) StartListening(key Key, eventHandler EventHandler) (
 	return i, nil
 }
 
-func (c *CommandController) StopListening(key Key, index int) error {
-	if key < 1 || key >= KeysCount {
+func (c *CommandController) StopListening(key dji.Key, index int) error {
+	if key < 1 || key >= dji.KeysCount {
 		return fmt.Errorf("invalid key")
 	}
 	if index < 0 {
@@ -128,12 +129,12 @@ func (c *CommandController) StopListening(key Key, index int) error {
 	return nil
 }
 
-func (c *CommandController) PerformAction(key Key, param interface{},
+func (c *CommandController) PerformAction(key dji.Key, param interface{},
 	eventHandler EventHandler) error {
-	if key < 1 || key >= KeysCount {
+	if key < 1 || key >= dji.KeysCount {
 		return fmt.Errorf("invalid key")
 	}
-	if (key.AccessType() & KeyAccessTypeAction) == 0 {
+	if (key.AccessType() & dji.KeyAccessTypeAction) == 0 {
 		return fmt.Errorf("key can not be acted upon")
 	}
 
@@ -184,7 +185,7 @@ func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
 }
 
 func (c *CommandController) handleStartListening(value interface{}, tag uint64) {
-	result := NewResultFromJSON([]byte(value.(string)))
+	result := dji.NewResultFromJSON([]byte(value.(string)))
 
 	c.mslm.Lock()
 	defer c.mslm.Unlock()
