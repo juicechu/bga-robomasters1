@@ -209,6 +209,7 @@ func (l *Linux) readLoop() {
 		if callback == nil {
 			log.Printf("No callback for event code %d.\n",
 				eventCode)
+			return
 		}
 
 		callback(eventCode, info, tag)
