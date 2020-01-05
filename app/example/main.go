@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/app"
+	"git.bug-br.org.br/bga/robomasters1/app/gimbal"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
 	"git.bug-br.org.br/bga/robomasters1/app/video"
 
@@ -60,6 +61,11 @@ func main() {
 		panic(err)
 	}
 
+	err = a.Start(*textMode)
+	if err != nil {
+		panic(err)
+	}
+
 	v, err := video.New()
 	if err != nil {
 		panic(err)
@@ -71,19 +77,20 @@ func main() {
 	}
 	defer v.RemoveDataHandler(index)
 
-	go func() {
-		err = a.Start(*textMode)
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	// HACK! Fix this.
-	time.Sleep(1 * time.Second)
-
-	a.WaitForConnection()
-
 	v.StartVideo()
+
+	g := gimbal.New(a.CommandController())
+
+	// TODO(bga): HACK, fix me.
+	time.Sleep(5 * time.Second)
+
+	go func() {
+		g.MoveToAbsolutePosition(20, 20, 100*time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		g.MoveToAbsolutePosition(-20, -20, 100*time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		g.ResetPosition()
+	}()
 
 	w.ShowAndRun()
 }

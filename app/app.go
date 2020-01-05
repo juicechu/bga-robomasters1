@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
@@ -24,8 +23,6 @@ type App struct {
 	qrc *internalqrcode.QRCode
 	pl  *pairing.Listener
 	cc  *internal.CommandController
-
-	cm sync.Mutex
 }
 
 func New(countryCode, ssId, password, bssId string) (*App, error) {
@@ -55,13 +52,10 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 		qrc,
 		pairing.NewListener(appId),
 		cc,
-		sync.Mutex{},
 	}, nil
 }
 
 func (a *App) Start(textMode bool) error {
-	a.cm.Lock()
-
 	var err error
 	if textMode {
 		err = a.showTextQRCode()
@@ -84,7 +78,6 @@ func (a *App) Start(textMode bool) error {
 	a.cc.StartListening(dji.KeyAirLinkConnection, func(result *dji.Result) {
 		if result.Value().(bool) {
 			a.pl.SendACK(connectingIP)
-			a.cm.Unlock()
 		}
 	})
 
@@ -141,16 +134,13 @@ L:
 				if err != nil {
 					panic(err)
 				}
+
+				break L
 			}
 		}
 	}
 
 	return nil
-}
-
-func (a *App) WaitForConnection() {
-	a.cm.Lock()
-	defer a.cm.Unlock()
 }
 
 func (a *App) CommandController() *internal.CommandController {
