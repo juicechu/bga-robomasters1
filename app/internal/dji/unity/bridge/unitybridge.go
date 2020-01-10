@@ -24,25 +24,29 @@ type unityBridge struct {
 
 	me              sync.Mutex
 	eventHandlerMap map[unity.EventType]map[int]EventHandler
+
+	w wrapper.Wrapper
 }
 
 var (
 	// Singleton instance.
 	instance *unityBridge
-
-	wrapperInstance wrapper.Wrapper
 )
 
 func init() {
+	w, err := wrapper.New("./unitybridge.dll")
+	if err != nil {
+		panic(err)
+	}
+
 	// Creates the singleton instance.
 	instance = &unityBridge{
 		sync.Mutex{},
 		false,
 		sync.Mutex{},
 		make(map[unity.EventType]map[int]EventHandler),
+		w,
 	}
-
-	wrapperInstance = wrapper.Instance()
 }
 
 // Setup creates and initializes the underlying Unity Bridge. It returns a nil
@@ -56,14 +60,14 @@ func Setup(name string, debuggable bool) error {
 	}
 
 	// Creates the underlying Unity Bridge.
-	wrapperInstance.CreateUnityBridge(name, debuggable)
+	instance.w.CreateUnityBridge(name, debuggable)
 
 	// Register the callback to all known events.
 	instance.registerCallback()
 
-	if !wrapperInstance.UnityBridgeInitialize() {
+	if !instance.w.UnityBridgeInitialize() {
 		// Something went wrong so we bail out.
-		wrapperInstance.DestroyUnityBridge()
+		instance.w.DestroyUnityBridge()
 		return fmt.Errorf("bridge initialization failed")
 	}
 
@@ -78,15 +82,15 @@ func Teardown() error {
 	instance.m.Lock()
 	defer instance.m.Unlock()
 
-	if instance.setup {
+	if !instance.setup {
 		return fmt.Errorf("bridge not setup")
 	}
 
-	// Unregister the callback to all known events.
+	// Unregister the callbacks to all known events.
 	instance.unregisterCallback()
 
-	wrapperInstance.UnityBridgeUninitialize()
-	wrapperInstance.DestroyUnityBridge()
+	instance.w.UnityBridgeUninitialize()
+	instance.w.DestroyUnityBridge()
 
 	instance.setup = false
 
@@ -215,14 +219,14 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 	switch dataType {
 	case 0:
 		if data != nil {
-			wrapperInstance.UnitySendEvent(event.Code(), data.([]byte), tag)
+			instance.w.UnitySendEvent(event.Code(), data.([]byte), tag)
 		} else {
-			wrapperInstance.UnitySendEvent(event.Code(), nil, tag)
+			instance.w.UnitySendEvent(event.Code(), nil, tag)
 		}
 	case 1:
-		wrapperInstance.UnitySendEventWithString(event.Code(), data.(string), tag)
+		instance.w.UnitySendEventWithString(event.Code(), data.(string), tag)
 	case 2:
-		wrapperInstance.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
+		instance.w.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
 	}
 
 	return nil
@@ -231,7 +235,7 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 func (b *unityBridge) registerCallback() {
 	for _, eventType := range unity.AllEventTypes() {
 		event := unity.NewEvent(eventType)
-		wrapperInstance.UnitySetEventCallback(event.Code(),
+		instance.w.UnitySetEventCallback(event.Code(),
 			b.unityEventCallback)
 	}
 }
@@ -239,7 +243,7 @@ func (b *unityBridge) registerCallback() {
 func (b *unityBridge) unregisterCallback() {
 	for _, eventType := range unity.AllEventTypes() {
 		event := unity.NewEvent(eventType)
-		wrapperInstance.UnitySetEventCallback(event.Code(), nil)
+		instance.w.UnitySetEventCallback(event.Code(), nil)
 	}
 }
 

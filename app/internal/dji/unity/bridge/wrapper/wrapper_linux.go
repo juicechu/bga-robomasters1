@@ -2,55 +2,53 @@ package wrapper
 
 import (
 	"encoding/binary"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 	"io"
 	"log"
 	"os"
+	"sync"
+
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 )
 
 type Linux struct {
-	*generic
-
 	readPipe  io.Reader
 	writePipe io.Writer
 
 	wineBridge *winebridge.WineBridge
+
+	m                sync.RWMutex
+	eventCallbackMap map[uint64]EventCallback
 }
 
-func Instance() Wrapper {
-	once.Do(func() {
-		localReadPipe, remoteWritePipe, err := os.Pipe()
-		if err != nil {
-			panic(err)
-		}
+func New(string) (Wrapper, error) {
+	localReadPipe, remoteWritePipe, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
 
-		remoteReadPipe, localWritePipe, err := os.Pipe()
-		if err != nil {
-			panic(err)
-		}
+	remoteReadPipe, localWritePipe, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
 
-		wineBridge, err := winebridge.New("winewrapper.exe",
-			remoteReadPipe, remoteWritePipe)
+	wineBridge, err := winebridge.New("./winewrapper.exe",
+		remoteReadPipe, remoteWritePipe)
 
-		err = wineBridge.Start()
-		if err != nil {
-			panic(err)
-		}
+	err = wineBridge.Start()
+	if err != nil {
+		panic(err)
+	}
 
-		l := &Linux{
-			readPipe:   localReadPipe,
-			writePipe:  localWritePipe,
-			wineBridge: wineBridge,
-		}
+	l := &Linux{
+		readPipe:         localReadPipe,
+		writePipe:        localWritePipe,
+		wineBridge:       wineBridge,
+		eventCallbackMap: make(map[uint64]EventCallback),
+	}
 
-		l.generic = newGeneric(l)
+	go l.readLoop()
 
-		go l.readLoop()
-
-		instance = l
-	})
-
-	return instance
+	return l, nil
 }
 
 func (l *Linux) CreateUnityBridge(name string, debuggable bool) {
@@ -158,7 +156,26 @@ func (l *Linux) UnitySendEventWithString(eventCode uint64, info string,
 	}
 }
 
-func (l *Linux) unitySetEventCallback(eventCode uint64, add bool) {
+func (l *Linux) UnitySetEventCallback(eventCode uint64,
+	eventCallback EventCallback) {
+	l.m.Lock()
+	defer l.m.Unlock()
+
+	_, ok := l.eventCallbackMap[eventCode]
+
+	add := false
+	if eventCallback == nil {
+		if ok {
+			delete(l.eventCallbackMap, eventCode)
+		}
+	} else {
+		if !ok {
+			l.eventCallbackMap[eventCode] = eventCallback
+		}
+
+		add = true
+	}
+
 	// size (4 bytes) + function (1 byte) + add (1 byte) +
 	// eventCode (8 bytes)
 	buffer := make([]byte, 4+1+1+8)
@@ -203,16 +220,19 @@ func (l *Linux) readLoop() {
 
 		eventCode := binary.LittleEndian.Uint64(sizedReadBuffer)
 		tag := binary.LittleEndian.Uint64(sizedReadBuffer[8:])
-		info := sizedReadBuffer[16:]
+		data := sizedReadBuffer[16:]
 
-		callback := l.Callback(eventCode)
-		if callback == nil {
+		l.m.RLock()
+		defer l.m.RUnlock()
+
+		callback, ok := l.eventCallbackMap[eventCode]
+		if !ok {
 			log.Printf("No callback for event code %d.\n",
 				eventCode)
 			return
 		}
 
-		callback(eventCode, info, tag)
+		callback(eventCode, data, tag)
 	}
 }
 

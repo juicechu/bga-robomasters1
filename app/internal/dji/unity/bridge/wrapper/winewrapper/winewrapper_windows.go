@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	wrapper2 "git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 	"io"
 	"os"
+
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 	readBuffer  []byte
 	writeBuffer []byte
 
-	wrapperInstance wrapper2.Wrapper
+	w wrapper.Wrapper
 )
 
 func main() {
@@ -28,7 +29,10 @@ func main() {
 	writePipe = wineBridge.File(1)
 
 	// Initialize wrapper.
-	wrapperInstance = wrapper2.Instance()
+	w, err = wrapper.New("./unitybridge.dll")
+	if err != nil {
+		panic(err)
+	}
 
 	lengthBuffer := make([]byte, 4)
 	for {
@@ -62,21 +66,21 @@ func processRead(readPipe io.Reader, length int) error {
 
 	function := sizedRequestBuffer[0]
 	switch function {
-	case wrapper2.FuncCreateUnityBridge:
+	case wrapper.FuncCreateUnityBridge:
 		runCreateUnityBridge(sizedRequestBuffer[1:])
-	case wrapper2.FuncDestroyUnityBridge:
+	case wrapper.FuncDestroyUnityBridge:
 		runDestroyUnityBridge()
-	case wrapper2.FuncUnityBridgeInitialize:
+	case wrapper.FuncUnityBridgeInitialize:
 		runUnityBridgeInitialize()
-	case wrapper2.FuncUnityBridgeUninitialize:
+	case wrapper.FuncUnityBridgeUninitialize:
 		runUnityBridgeUninitialize()
-	case wrapper2.FuncUnitySetEventCallback:
+	case wrapper.FuncUnitySetEventCallback:
 		runUnitySetEventCallback(sizedRequestBuffer[1:])
-	case wrapper2.FuncUnitySendEvent:
+	case wrapper.FuncUnitySendEvent:
 		runUnitySendEvent(sizedRequestBuffer[1:])
-	case wrapper2.FuncUnitySendEventWithNumber:
+	case wrapper.FuncUnitySendEventWithNumber:
 		runUnitySendEventWithNumber(sizedRequestBuffer[1:])
-	case wrapper2.FuncUnitySendEventWithString:
+	case wrapper.FuncUnitySendEventWithString:
 		runUnitySendEventWithString(sizedRequestBuffer[1:])
 	}
 
@@ -91,23 +95,23 @@ func runCreateUnityBridge(buffer []byte) {
 
 	name := string(buffer[1:])
 
-	wrapperInstance.CreateUnityBridge(name, debuggable)
+	w.CreateUnityBridge(name, debuggable)
 }
 
 func runDestroyUnityBridge() {
-	wrapperInstance.DestroyUnityBridge()
+	w.DestroyUnityBridge()
 }
 
 func runUnityBridgeInitialize() {
-	if wrapperInstance.UnityBridgeInitialize() {
-		fmt.Println("Unity Bridge initialized.")
-	} else {
+	// Currently there is no way to return the error to the Linux side.
+	// Simply log it here for now.
+	if !w.UnityBridgeInitialize() {
 		fmt.Println("Unity Bridge failed to initialize.")
 	}
 }
 
 func runUnityBridgeUninitialize() {
-	wrapperInstance.UnityBridgeUninitialize()
+	w.UnityBridgeUninitialize()
 }
 
 func runUnitySetEventCallback(buffer []byte) {
@@ -117,10 +121,10 @@ func runUnitySetEventCallback(buffer []byte) {
 	}
 	eventCode := binary.LittleEndian.Uint64(buffer[1:])
 	if add {
-		wrapperInstance.UnitySetEventCallback(eventCode,
+		w.UnitySetEventCallback(eventCode,
 			eventCallback)
 	} else {
-		wrapperInstance.UnitySetEventCallback(eventCode, nil)
+		w.UnitySetEventCallback(eventCode, nil)
 	}
 }
 
@@ -129,27 +133,27 @@ func runUnitySendEvent(buffer []byte) {
 	tag := binary.LittleEndian.Uint64(buffer[8:])
 	info := buffer[16:]
 
-	wrapperInstance.UnitySendEvent(eventCode, info, tag)
+	w.UnitySendEvent(eventCode, info, tag)
 }
 
 func runUnitySendEventWithNumber(buffer []byte) {
 	eventCode := binary.LittleEndian.Uint64(buffer)
 	tag := binary.LittleEndian.Uint64(buffer[8:])
-	info := binary.LittleEndian.Uint64(buffer[16:])
+	data := binary.LittleEndian.Uint64(buffer[16:])
 
-	wrapperInstance.UnitySendEventWithNumber(eventCode, info, tag)
+	w.UnitySendEventWithNumber(eventCode, data, tag)
 }
 
 func runUnitySendEventWithString(buffer []byte) {
 	eventCode := binary.LittleEndian.Uint64(buffer)
 	tag := binary.LittleEndian.Uint64(buffer[8:])
-	info := string(buffer[16:])
+	data := string(buffer[16:])
 
-	wrapperInstance.UnitySendEventWithString(eventCode, info, tag)
+	w.UnitySendEventWithString(eventCode, data, tag)
 }
 
-func eventCallback(eventCode uint64, info []byte, tag uint64) {
-	length := 4 + 8 + 8 + len(info)
+func eventCallback(eventCode uint64, data []byte, tag uint64) {
+	length := 4 + 8 + 8 + len(data)
 	if len(writeBuffer) < length {
 		writeBuffer = make([]byte, length)
 	}
@@ -158,7 +162,7 @@ func eventCallback(eventCode uint64, info []byte, tag uint64) {
 	binary.LittleEndian.PutUint32(sizedWriteBuffer, uint32(length))
 	binary.LittleEndian.PutUint64(sizedWriteBuffer[4:], eventCode)
 	binary.LittleEndian.PutUint64(sizedWriteBuffer[12:], tag)
-	copy(sizedWriteBuffer[20:], info)
+	copy(sizedWriteBuffer[20:], data)
 
 	_, err := writePipe.Write(sizedWriteBuffer)
 	if err != nil {
