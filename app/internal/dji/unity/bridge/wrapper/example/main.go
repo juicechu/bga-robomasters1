@@ -20,6 +20,7 @@ func main() {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 100, 101, 200, 300, 301, 302, 303,
 		304, 305, 306, 500,
 	}
+
 	for _, event := range events {
 		w.UnitySetEventCallback(event<<32, callback)
 	}
@@ -30,11 +31,13 @@ func main() {
 
 	time.Sleep(10 * time.Second)
 
-	w.UnityBridgeUninitialize()
-
 	for _, event := range events {
 		w.UnitySetEventCallback(event<<32, nil)
 	}
+
+	time.Sleep(10 * time.Second)
+
+	w.UnityBridgeUninitialize()
 
 	w.DestroyUnityBridge()
 
