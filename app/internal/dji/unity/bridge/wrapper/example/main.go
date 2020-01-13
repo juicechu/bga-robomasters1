@@ -29,13 +29,15 @@ func main() {
 		panic("Failed initializing unity bridge")
 	}
 
-	time.Sleep(10 * time.Second)
+	// Connection must be started otherwise UnityBridgeUninitialize()
+	// crashes.
+	startConnection(w)
+
+	time.Sleep(5 * time.Second)
 
 	for _, event := range events {
 		w.UnitySetEventCallback(event<<32, nil)
 	}
-
-	time.Sleep(10 * time.Second)
 
 	w.UnityBridgeUninitialize()
 
@@ -45,6 +47,11 @@ func main() {
 	runtime.GC()
 
 	time.Sleep(5 * time.Second)
+}
+
+func startConnection(w wrapper.Wrapper) {
+	// Start data link.
+	w.UnitySendEvent(uint64(100)<<32, nil, 0)
 }
 
 func callback(eventCode uint64, data []byte, tag uint64) {
