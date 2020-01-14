@@ -33,6 +33,9 @@ func New(string) (Wrapper, error) {
 
 	wineBridge, err := winebridge.New("./winewrapper.exe",
 		remoteReadPipe, remoteWritePipe)
+	if err != nil {
+		return nil, err
+	}
 
 	err = wineBridge.Start()
 	if err != nil {
@@ -222,18 +225,22 @@ func (l *Linux) readLoop() {
 		tag := binary.LittleEndian.Uint64(sizedReadBuffer[8:])
 		data := sizedReadBuffer[16:]
 
-		l.m.RLock()
-		defer l.m.RUnlock()
-
-		callback, ok := l.eventCallbackMap[eventCode]
-		if !ok {
-			log.Printf("No callback for event code %d.\n",
-				eventCode)
-			return
-		}
-
-		callback(eventCode, data, tag)
+		l.maybeRunCallback(eventCode, data, tag)
 	}
+}
+
+func (l *Linux) maybeRunCallback(eventCode uint64, data []byte, tag uint64) {
+	l.m.RLock()
+	defer l.m.RUnlock()
+
+	callback, ok := l.eventCallbackMap[eventCode]
+	if !ok {
+		log.Printf("No callback for event code %d.\n",
+			eventCode)
+		return
+	}
+
+	callback(eventCode, data, tag)
 }
 
 func getFd(file *os.File) uintptr {
