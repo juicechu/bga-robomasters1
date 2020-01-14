@@ -7,6 +7,7 @@ import (
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/support/callbacks"
 )
 
 // EventHandler is the required interface for types that want to listen to Unity
@@ -22,10 +23,8 @@ type unityBridge struct {
 	m     sync.Mutex
 	setup bool
 
-	me              sync.Mutex
-	eventHandlerMap map[unity.EventType]map[int]EventHandler
-
-	w wrapper.Wrapper
+	cbs *callbacks.Callbacks
+	w   wrapper.Wrapper
 }
 
 var (
@@ -43,8 +42,7 @@ func init() {
 	instance = &unityBridge{
 		sync.Mutex{},
 		false,
-		sync.Mutex{},
-		make(map[unity.EventType]map[int]EventHandler),
+		callbacks.New("UnityBridge"),
 		w,
 	}
 }
@@ -113,66 +111,28 @@ func Instance() *unityBridge {
 
 // AddEventHandler adds an event handler for the given event.
 func (b *unityBridge) AddEventHandler(eventType unity.EventType,
-	eventHandler EventHandler) (int, error) {
+	eventHandler EventHandler) (uint64, error) {
 	if !unity.IsValidEventType(eventType) {
-		return -1, fmt.Errorf("invalid event type")
-	}
-	if eventHandler == nil {
-		return -1, fmt.Errorf("eventHandler must not be nil")
+		return 0, fmt.Errorf("invalid event type")
 	}
 
-	b.me.Lock()
-	defer b.me.Unlock()
-
-	handlerMap, ok := b.eventHandlerMap[eventType]
-	if !ok {
-		handlerMap = make(map[int]EventHandler)
+	tag, err := b.cbs.AddContinuous(callbacks.Key(eventType), eventHandler)
+	if err != nil {
+		return 0, err
 	}
 
-	var i int
-	for i = 0; ; i++ {
-		_, ok := handlerMap[i]
-		if !ok {
-			handlerMap[i] = eventHandler
-			break
-		}
-	}
-
-	b.eventHandlerMap[eventType] = handlerMap
-
-	return i, nil
+	return uint64(tag), nil
 }
 
 // RemoveEventHandler removes the event handler at the given index for the
 // given event.
-func (b *unityBridge) RemoveEventHandler(eventType unity.EventType, index int) error {
+func (b *unityBridge) RemoveEventHandler(eventType unity.EventType,
+	tag uint64) error {
 	if !unity.IsValidEventType(eventType) {
 		return fmt.Errorf("invalid event type")
 	}
-	if index < 0 {
-		return fmt.Errorf("index must be non-negative")
-	}
 
-	b.me.Lock()
-	defer b.me.Unlock()
-
-	handlerMap, ok := b.eventHandlerMap[eventType]
-	if !ok {
-		return fmt.Errorf("no handlers for given event")
-	}
-
-	_, ok = handlerMap[index]
-	if !ok {
-		return fmt.Errorf("no handler for given event at given index")
-	}
-
-	delete(handlerMap, index)
-
-	if len(handlerMap) == 0 {
-		delete(b.eventHandlerMap, eventType)
-	}
-
-	return nil
+	return b.cbs.Remove(callbacks.Key(eventType), callbacks.Tag(tag))
 }
 
 // SendEvent sends a unity event through the underlying Unity Bridge. It can
@@ -188,7 +148,8 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 
 	event, ok := params[0].(*unity.Event)
 	if !ok {
-		return fmt.Errorf("event (first) parameter must be a *unity.Event")
+		return fmt.Errorf("event (first) parameter must be a " +
+			"*unity.Event")
 	}
 
 	dataType := 0
@@ -212,21 +173,25 @@ func (b *unityBridge) SendEvent(params ...interface{}) error {
 	if len(params) > 2 {
 		tag, ok = params[2].(uint64)
 		if !ok {
-			return fmt.Errorf("tag (third) parameter must be uint64")
+			return fmt.Errorf("tag (third) parameter must be " +
+				"uint64")
 		}
 	}
 
 	switch dataType {
 	case 0:
 		if data != nil {
-			instance.w.UnitySendEvent(event.Code(), data.([]byte), tag)
+			instance.w.UnitySendEvent(event.Code(), data.([]byte),
+				tag)
 		} else {
 			instance.w.UnitySendEvent(event.Code(), nil, tag)
 		}
 	case 1:
-		instance.w.UnitySendEventWithString(event.Code(), data.(string), tag)
+		instance.w.UnitySendEventWithString(event.Code(), data.(string),
+			tag)
 	case 2:
-		instance.w.UnitySendEventWithNumber(event.Code(), data.(uint64), tag)
+		instance.w.UnitySendEventWithNumber(event.Code(), data.(uint64),
+			tag)
 	}
 
 	return nil
@@ -247,15 +212,16 @@ func (b *unityBridge) unregisterCallback() {
 	}
 }
 
-func (b *unityBridge) unityEventCallback(eventCode uint64, data []byte, tag uint64) {
+func (b *unityBridge) unityEventCallback(eventCode uint64, data []byte,
+	tag uint64) {
 	event := unity.NewEventFromCode(eventCode)
 	if event == nil {
 		log.Printf("Unknown event with code %d.\n", eventCode)
 		return
 	}
 
-	eventHandlers, ok := b.eventHandlerMap[event.Type()]
-	if !ok {
+	eventHandlers, err := b.cbs.CallbacksForKey(callbacks.Key(event.Type()))
+	if err != nil {
 		log.Printf("No event handlers for %q\n",
 			unity.EventTypeName(event.Type()))
 		return
@@ -265,7 +231,7 @@ func (b *unityBridge) unityEventCallback(eventCode uint64, data []byte, tag uint
 
 	for _, handler := range eventHandlers {
 		wg.Add(1)
-		go handler.HandleEvent(event, data, tag, &wg)
+		go handler.(EventHandler).HandleEvent(event, data, tag, &wg)
 	}
 
 	wg.Wait()
