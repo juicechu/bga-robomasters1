@@ -155,3 +155,23 @@ func (c *Callbacks) Callback(key Key, tag Tag) (interface{}, error) {
 
 	return data.callback, nil
 }
+
+// CallbacksForKey returns all callbacks associated with the given key. Returns
+// a slice of callbacks (as interfaces{}) and a nil error on success and nil and
+// a non-nil error on failure.
+func (c *Callbacks) CallbacksForKey(key Key) ([]interface{}, error) {
+	tagMap, ok := c.callbackMap[key]
+	if !ok {
+		return nil, fmt.Errorf("%s : key not found", c.name)
+	}
+
+	cbs := make([]interface{}, len(tagMap))
+
+	i := 0
+	for _, cb := range tagMap {
+		cbs[i] = cb
+		i++
+	}
+
+	return cbs, nil
+}
