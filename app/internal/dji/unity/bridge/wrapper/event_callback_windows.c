@@ -12,7 +12,7 @@ void event_callback(void* context, va_alist alist) {
         int length = va_arg_int(alist);
         unsigned long long tag = va_arg_ulonglong(alist);
 	
-	// Create a Go slice with the info data.
+	// Create a Go slice with the data.
 	GoSlice data_slice;
 	data_slice.data = data;
 	data_slice.len = length;

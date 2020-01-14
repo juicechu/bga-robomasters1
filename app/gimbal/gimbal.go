@@ -16,7 +16,7 @@ func New(cc *internal.CommandController) *Gimbal {
 	cc.StartListening(dji.KeyGimbalConnection, func(result *dji.Result) {
 		if result.Value().(bool) {
 			// Enable chassis and gimbal updates.
-			fmt.Println("Gimbal connecvtion stablished.")
+			fmt.Println("Gimbal connection established.")
 			cc.PerformAction(dji.KeyRobomasterOpenChassisSpeedUpdates, nil, nil)
 			cc.PerformAction(dji.KeyGimbalOpenAttitudeUpdates, nil, nil)
 		}

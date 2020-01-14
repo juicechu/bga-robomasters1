@@ -12,6 +12,7 @@ const (
 	KeyGimbalConnection
 	KeyGimbalOpenAttitudeUpdates
 	KeyGimbalResetPosition
+	KeyMainControllerConnection
 	KeyRobomasterOpenChassisSpeedUpdates
 	KeysCount
 	// TODO(bga): Add keys here as needed.
@@ -70,6 +71,8 @@ var (
 			KeyAccessTypeAction},
 		KeyGimbalResetPosition: keyAttributes{67108870, KeyDataTypeLong,
 			KeyAccessTypeAction},
+		KeyMainControllerConnection: keyAttributes{33554433, KeyDataTypeBool,
+			KeyAccessTypeRead},
 		KeyRobomasterOpenChassisSpeedUpdates: keyAttributes{33554474, KeyDataTypeVoid,
 			KeyAccessTypeAction},
 		// TODO(bga): Add other attributes here as needed. Needs to be kept in
@@ -83,6 +86,7 @@ var (
 		67108877:  KeyGimbalAngleFrontPitchRotation,
 		67108882:  KeyGimbalOpenAttitudeUpdates,
 		67108870:  KeyGimbalResetPosition,
+		33554433:  KeyMainControllerConnection,
 		33554474:  KeyRobomasterOpenChassisSpeedUpdates,
 	}
 )
