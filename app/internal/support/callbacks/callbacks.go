@@ -24,7 +24,7 @@ type data struct {
 type Callbacks struct {
 	name string
 
-	m           sync.Mutex
+	m           sync.RWMutex
 	callbackMap map[Key]map[Tag]data
 	nextTag     uint64
 }
@@ -33,7 +33,7 @@ type Callbacks struct {
 func New(name string) *Callbacks {
 	return &Callbacks{
 		name,
-		sync.Mutex{},
+		sync.RWMutex{},
 		make(map[Key]map[Tag]data),
 		0,
 	}
@@ -131,21 +131,15 @@ func (c *Callbacks) Callback(key Key, tag Tag) (interface{}, error) {
 		return nil, fmt.Errorf("%s : invalid tag", c.name)
 	}
 
+	d, tagMap, err := c.getData(key, tag)
+	if err != nil {
+		return nil, err
+	}
+
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	tagMap, ok := c.callbackMap[key]
-	if !ok {
-		return nil, fmt.Errorf("%s : key not found", c.name)
-	}
-
-	data, ok := tagMap[tag]
-	if !ok {
-		return nil, fmt.Errorf("%s : tag not found for given key",
-			c.name)
-	}
-
-	if data.once {
+	if d.once {
 		delete(tagMap, tag)
 	}
 
@@ -153,13 +147,35 @@ func (c *Callbacks) Callback(key Key, tag Tag) (interface{}, error) {
 		delete(c.callbackMap, key)
 	}
 
-	return data.callback, nil
+	return d.callback, nil
+}
+
+func (c *Callbacks) getData(key Key,
+	tag Tag) (data, map[Tag]data, error) {
+	c.m.RLock()
+	defer c.m.RUnlock()
+
+	tagMap, ok := c.callbackMap[key]
+	if !ok {
+		return data{}, nil, fmt.Errorf("%s : key not found", c.name)
+	}
+
+	d, ok := tagMap[tag]
+	if !ok {
+		return data{}, nil, fmt.Errorf(
+			"%s : tag not found for given key", c.name)
+	}
+
+	return d, tagMap, nil
 }
 
 // CallbacksForKey returns all callbacks associated with the given key. Returns
 // a slice of callbacks (as interfaces{}) and a nil error on success and nil and
 // a non-nil error on failure.
 func (c *Callbacks) CallbacksForKey(key Key) ([]interface{}, error) {
+	c.m.RLock()
+	defer c.m.RUnlock()
+
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
 		return nil, fmt.Errorf("%s : key not found", c.name)
