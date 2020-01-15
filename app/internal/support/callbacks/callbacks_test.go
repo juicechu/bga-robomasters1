@@ -370,3 +370,26 @@ func TestCallbacks_CallbacksForKey_Success(t *testing.T) {
 		t.Fatalf("expected 2 callbacks, got %d", len(cbSlice))
 	}
 }
+
+func BenchmarkContinuousCallbacks(b *testing.B) {
+	cbs := New("Test", nil, nil)
+	if cbs == nil {
+		b.Fatalf("expected non-nil callbacks, got nil")
+	}
+
+	tag, err := cbs.AddContinuous(Key(0), func() {})
+	if err != nil {
+		b.Fatalf("expected nil error, got %q", err)
+	}
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		cb, err := cbs.Callback(Key(0), tag)
+		if err != nil {
+			panic(err)
+		}
+
+		cb.(func())()
+	}
+}
