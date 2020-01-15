@@ -79,15 +79,14 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	if len(c.callbackMap) == 0 && c.firstFunc != nil {
-		err := c.firstFunc(key)
-		if err != nil {
-			return 0, err
-		}
-	}
-
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
+		if c.firstFunc != nil {
+			err := c.firstFunc(key)
+			if err != nil {
+				return 0, err
+			}
+		}
 		tagMap = make(map[Tag]*data)
 		c.callbackMap[key] = tagMap
 	}
@@ -137,13 +136,13 @@ func (c *Callbacks) remove(key Key, tag Tag, allowOnce bool) error {
 
 	delete(tagMap, tag)
 
+	var err error = nil
 	if len(tagMap) == 0 {
 		delete(c.callbackMap, key)
-	}
 
-	var err error = nil
-	if len(c.callbackMap) == 0 && c.lastFunc != nil {
-		err = c.lastFunc(key)
+		if c.lastFunc != nil {
+			err = c.lastFunc(key)
+		}
 	}
 
 	return err

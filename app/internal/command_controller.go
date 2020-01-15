@@ -4,11 +4,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
+	"sync"
+
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge"
-	"log"
-	"sync"
+	"git.bug-br.org.br/bga/robomasters1/app/internal/support/callbacks"
 )
 
 type EventHandler func(result *dji.Result)
@@ -16,13 +18,28 @@ type EventHandler func(result *dji.Result)
 type CommandController struct {
 	*GenericController
 
-	mslm              sync.Mutex
-	startListeningMap map[dji.Key]map[int]EventHandler
+	starListeningCallbacks *callbacks.Callbacks
 }
 
 func NewCommandController() (*CommandController, error) {
+	startListeningCallbacks := callbacks.New(
+		"CommandController/StartListening",
+		func() error {
+			return bridge.Instance().SendEvent(
+				unity.NewEventWithSubType(
+					unity.EventTypeStartListening,
+					uint64(key.Value())))
+		},
+		func() error {
+			return bridge.Instance().SendEvent(
+				unity.NewEventWithSubType(
+					unity.EventTypeStopListening,
+					uint64(key.Value())))
+		},
+	)
+
 	cc := &CommandController{
-		startListeningMap: make(map[dji.Key]map[int]EventHandler),
+		startListeningCallbacks: startListeningCallbacks,
 	}
 
 	cc.GenericController = NewGenericController(cc)
@@ -48,81 +65,29 @@ func NewCommandController() (*CommandController, error) {
 	return cc, nil
 }
 
-func (c *CommandController) StartListening(key dji.Key, eventHandler EventHandler) (int, error) {
+func (c *CommandController) StartListening(key dji.Key,
+	eventHandler EventHandler) (uint64, error) {
 	if key < 1 || key >= dji.KeysCount {
-		return -1, fmt.Errorf("invalid key")
+		return 0, fmt.Errorf("invalid key")
 	}
 	if eventHandler == nil {
-		return -1, fmt.Errorf("eventHandler must not be nil")
+		return 0, fmt.Errorf("eventHandler must not be nil")
 	}
 	if (key.AccessType() & dji.KeyAccessTypeRead) == 0 {
-		return -1, fmt.Errorf("key is not readable")
+		return 0, fmt.Errorf("key is not readable")
 	}
 
-	c.mslm.Lock()
-	defer c.mslm.Unlock()
-
-	handlerMap, ok := c.startListeningMap[key]
-	if !ok {
-		handlerMap = make(map[int]EventHandler)
-	}
-
-	if len(handlerMap) == 0 {
-		err := bridge.Instance().SendEvent(unity.NewEventWithSubType(
-			unity.EventTypeStartListening, uint64(key.Value())))
-		if err != nil {
-			return -1, err
-		}
-	}
-
-	var i int
-	for i = 0; ; i++ {
-		_, ok := handlerMap[i]
-		if !ok {
-			handlerMap[i] = eventHandler
-			break
-		}
-	}
-
-	c.startListeningMap[key] = handlerMap
-
-	return i, nil
+	return c.startListeningCallbacks.AddContinuous(callbacks.Key(key),
+		eventHandler)
 }
 
-func (c *CommandController) StopListening(key dji.Key, index int) error {
+func (c *CommandController) StopListening(key dji.Key, tag uint64) error {
 	if key < 1 || key >= dji.KeysCount {
 		return fmt.Errorf("invalid key")
 	}
-	if index < 0 {
-		return fmt.Errorf("index must be non-negative")
-	}
 
-	c.mslm.Lock()
-	defer c.mslm.Unlock()
-
-	handlerMap, ok := c.startListeningMap[key]
-	if !ok {
-		return fmt.Errorf("no handlers for given key")
-	}
-
-	_, ok = handlerMap[index]
-	if !ok {
-		return fmt.Errorf("no listening handler at given index")
-	}
-
-	delete(handlerMap, index)
-
-	if len(handlerMap) == 0 {
-		delete(c.startListeningMap, key)
-
-		err := bridge.Instance().SendEvent(unity.NewEventWithSubType(
-			unity.EventTypeStopListening, uint64(key.Value())))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.startListeningCallbacks.Remove(callbacks.Key(key),
+		callbacks.Tag(tag))
 }
 
 func (c *CommandController) PerformAction(key dji.Key, param interface{},
@@ -155,10 +120,12 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 	return nil
 }
 
-func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
+func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 	tag uint64, wg *sync.WaitGroup) {
 	var value interface{}
 
+	// TODO(bga): Apparently, the unity bridge reserves the upper 8 bits
+	//  for reporting back type information. Double check this.
 	infoType := (tag >> 56) & 0xff
 	switch infoType {
 	case 0:
@@ -166,12 +133,17 @@ func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
 	case 1:
 		value = binary.LittleEndian.Uint64(info)
 	default:
-		value = info
+		// Apparently only string and uint64 types are supported
+		// currently.
+		panic(fmt.Sprintf("Unexpected data type: %d.\n", infoType))
 	}
+
+	// See above.
+	adjustedTag := tag & 0xffffffffffffff
 
 	switch event.Type() {
 	case unity.EventTypeStartListening:
-		c.handleStartListening(value, tag)
+		c.handleStartListening(event.Subtype(), value, adjustedTag)
 	default:
 		log.Printf("Unsupported event %s. Value:%v. Tag:%d\n",
 			unity.EventTypeName(event.Type()), value, tag)
@@ -180,8 +152,16 @@ func (c *CommandController) HandleEvent(event *unity.Event, info []byte,
 	wg.Done()
 }
 
-func (c *CommandController) handleStartListening(value interface{}, tag uint64) {
-	result := dji.NewResultFromJSON([]byte(value.(string)))
+func (c *CommandController) handleStartListening(value interface{},
+	tag uint64) {
+	stringValue, ok := value.(string)
+	if !ok {
+		panic("unexpected non-string value")
+	}
+
+	result, ok := dji.NewResultFromJSON([]byte(stringValue))
+
+	c.startListeningCallbacks.Callback(
 
 	c.mslm.Lock()
 	defer c.mslm.Unlock()
