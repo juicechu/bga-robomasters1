@@ -10,17 +10,18 @@ func TestCallbacks_New_Success(t *testing.T) {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	cbs = New("Test", func() {}, nil)
+	cbs = New("Test", func() error { return nil }, nil)
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	cbs = New("Test", nil, func() {})
+	cbs = New("Test", nil, func() error { return nil })
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	cbs = New("Test", func() {}, func() {})
+	cbs = New("Test", func() error { return nil },
+		func() error { return nil })
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
@@ -58,7 +59,7 @@ func TestCallbacks_AddSingleShot_Success(t *testing.T) {
 func TestCallbacks_AddSingleShot_FirstFunc_Success(t *testing.T) {
 	i := 0
 
-	cbs := New("Test", func() { i++ }, nil)
+	cbs := New("Test", func() error { i++; return nil }, nil)
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
@@ -110,7 +111,7 @@ func TestCallbacks_AddContinuous_Success(t *testing.T) {
 func TestCallbacks_AddContinuous_FirstFunc_Success(t *testing.T) {
 	i := 0
 
-	cbs := New("Test", func() { i++ }, nil)
+	cbs := New("Test", func() error { i++; return nil }, nil)
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
@@ -190,7 +191,7 @@ func TestCallbacks_Remove_Success(t *testing.T) {
 func TestCallbacks_Remove_LastFunc_Success(t *testing.T) {
 	i := 0
 
-	cbs := New("Test", nil, func() { i++ })
+	cbs := New("Test", nil, func() error { i++; return nil })
 	if cbs == nil {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}

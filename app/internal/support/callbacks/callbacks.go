@@ -23,8 +23,8 @@ type data struct {
 // Callbacks holds a map of callbacks (continuous or single-shot).
 type Callbacks struct {
 	name      string
-	firstFunc func()
-	lastFunc  func()
+	firstFunc func() error
+	lastFunc  func() error
 
 	m           sync.Mutex
 	callbackMap map[Key]map[Tag]*data
@@ -35,7 +35,8 @@ type Callbacks struct {
 // lastFunc. The firstFunc function is run before the first callback is added
 // to the map and the lastFunc is run after the last one is removed. Either
 // might be nil which means do not run.
-func New(name string, firstFunc func(), lastFunc func()) *Callbacks {
+func New(name string, firstFunc func() error,
+	lastFunc func() error) *Callbacks {
 	return &Callbacks{
 		name,
 		firstFunc,
@@ -76,7 +77,10 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 	defer c.m.Unlock()
 
 	if len(c.callbackMap) == 0 && c.firstFunc != nil {
-		c.firstFunc()
+		err := c.firstFunc()
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	tagMap, ok := c.callbackMap[key]
@@ -134,11 +138,12 @@ func (c *Callbacks) remove(key Key, tag Tag, allowOnce bool) error {
 		delete(c.callbackMap, key)
 	}
 
+	var err error = nil
 	if len(c.callbackMap) == 0 && c.lastFunc != nil {
-		c.lastFunc()
+		err = c.lastFunc()
 	}
 
-	return nil
+	return err
 }
 
 // Callback returns the callback associated with Key and Tag. If the callback is
