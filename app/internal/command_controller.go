@@ -19,6 +19,7 @@ type CommandController struct {
 	*GenericController
 
 	startListeningCallbacks *callbacks.Callbacks
+	performActionCallbacks  *callbacks.Callbacks
 }
 
 func NewCommandController() (*CommandController, error) {
@@ -38,8 +39,12 @@ func NewCommandController() (*CommandController, error) {
 		},
 	)
 
+	performActionCallbacks := callbacks.New(
+		"CommandController/PerformAction", nil, nil)
+
 	cc := &CommandController{
 		startListeningCallbacks: startListeningCallbacks,
+		performActionCallbacks:  performActionCallbacks,
 	}
 
 	cc.GenericController = NewGenericController(cc)
@@ -102,8 +107,11 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 	}
 
 	if resultHandler != nil {
-		// TODO(bga): Fix this.
-		panic("No result handler support in PerformAction.")
+		err := c.performActionCallbacks.AddSingleShot(
+			callbacks.Key(key), resultHandler)
+		if err != nil {
+			return err
+		}
 	}
 
 	var data []byte
@@ -145,7 +153,9 @@ func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 
 	switch event.Type() {
 	case unity.EventTypeStartListening:
-		c.handleStartListening(event.SubType(), value, adjustedTag)
+		c.handleStartListening(event.SubType(), value)
+	case unity.EventTypePerformAction:
+		c.handlePerformAction(event.SubType(), value, adjustedTag)
 	default:
 		log.Printf("Unsupported event %s. Value:%v. Tag:%d\n",
 			unity.EventTypeName(event.Type()), value, tag)
@@ -154,8 +164,8 @@ func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 	wg.Done()
 }
 
-func (c *CommandController) handleStartListening(key uint64, value interface{},
-	tag uint64) {
+func (c *CommandController) handleStartListening(key uint64,
+	value interface{}) {
 	stringValue, ok := value.(string)
 	if !ok {
 		panic("unexpected non-string value")
@@ -164,8 +174,8 @@ func (c *CommandController) handleStartListening(key uint64, value interface{},
 	cbs, err := c.startListeningCallbacks.CallbacksForKey(
 		callbacks.Key(key))
 	if err != nil {
-		log.Printf("Error looking up callbacks for key %d with tag "+
-			"%v: %s\n", key, tag, err)
+		log.Printf("Error looking up callbacks for key %d: %s\n", key,
+			err)
 		return
 	}
 
@@ -178,6 +188,25 @@ func (c *CommandController) handleStartListening(key uint64, value interface{},
 	}
 
 	wg.Wait()
+}
+
+func (c *CommandController) handlePerformAction(key uint64,
+	value interface{}, tag uint64) {
+	stringValue, ok := value.(string)
+	if !ok {
+		panic("unexpected non-string value")
+	}
+
+	cb, err := c.startListeningCallbacks.Callback(callbacks.Key(key),
+		callbacks.Tag(tag))
+	if err != nil {
+		// No callback set. That is fine.
+		return
+	}
+
+	result := dji.NewResultFromJSON([]byte(stringValue))
+
+	cb.(ResultCallback)(result, nil)
 }
 
 func (c *CommandController) Teardown() error {
