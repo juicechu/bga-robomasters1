@@ -15,6 +15,10 @@ type Key uint64
 // auto-remove a single-shot callback).
 type Tag uint64
 
+// KeyFunc is the prototype for functions that should run when the first
+// callback for a key is added and the last one is removed.
+type KeyFunc func(key Key) error
+
 type data struct {
 	callback interface{}
 	once     bool
@@ -23,8 +27,8 @@ type data struct {
 // Callbacks holds a map of callbacks (continuous or single-shot).
 type Callbacks struct {
 	name      string
-	firstFunc func() error
-	lastFunc  func() error
+	firstFunc KeyFunc
+	lastFunc  KeyFunc
 
 	m           sync.Mutex
 	callbackMap map[Key]map[Tag]*data
@@ -35,8 +39,7 @@ type Callbacks struct {
 // lastFunc. The firstFunc function is run before the first callback is added
 // to the map and the lastFunc is run after the last one is removed. Either
 // might be nil which means do not run.
-func New(name string, firstFunc func() error,
-	lastFunc func() error) *Callbacks {
+func New(name string, firstFunc KeyFunc, lastFunc KeyFunc) *Callbacks {
 	return &Callbacks{
 		name,
 		firstFunc,
@@ -77,7 +80,7 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 	defer c.m.Unlock()
 
 	if len(c.callbackMap) == 0 && c.firstFunc != nil {
-		err := c.firstFunc()
+		err := c.firstFunc(key)
 		if err != nil {
 			return 0, err
 		}
@@ -140,7 +143,7 @@ func (c *Callbacks) remove(key Key, tag Tag, allowOnce bool) error {
 
 	var err error = nil
 	if len(c.callbackMap) == 0 && c.lastFunc != nil {
-		err = c.lastFunc()
+		err = c.lastFunc(key)
 	}
 
 	return err
