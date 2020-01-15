@@ -42,7 +42,7 @@ func init() {
 	instance = &unityBridge{
 		sync.Mutex{},
 		false,
-		callbacks.New("UnityBridge"),
+		callbacks.New("UnityBridge", nil, nil),
 		w,
 	}
 }
