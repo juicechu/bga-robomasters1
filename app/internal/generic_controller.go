@@ -9,13 +9,13 @@ import (
 type GenericController struct {
 	eventHandler bridge.EventHandler
 
-	eventHandlerIndexMap map[unity.EventType]int
+	eventHandlerIndexMap map[unity.EventType]uint64
 }
 
 func NewGenericController(eventHandler bridge.EventHandler) *GenericController {
 	return &GenericController{
 		eventHandler,
-		make(map[unity.EventType]int),
+		make(map[unity.EventType]uint64),
 	}
 }
 
