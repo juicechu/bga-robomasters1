@@ -22,19 +22,26 @@ type data struct {
 
 // Callbacks holds a map of callbacks (continuous or single-shot).
 type Callbacks struct {
-	name string
+	name      string
+	firstFunc func()
+	lastFunc  func()
 
-	m           sync.RWMutex
-	callbackMap map[Key]map[Tag]data
+	m           sync.Mutex
+	callbackMap map[Key]map[Tag]*data
 	nextTag     uint64
 }
 
-// New returns a new Callbacks instance.
-func New(name string) *Callbacks {
+// New returns a new Callbacks instance with the given name, firstFunc and
+// lastFunc. The firstFunc function is run before the first callback is added
+// to the map and the lastFunc is run after the last one is removed. Either
+// might be nil which means do not run.
+func New(name string, firstFunc func(), lastFunc func()) *Callbacks {
 	return &Callbacks{
 		name,
-		sync.RWMutex{},
-		make(map[Key]map[Tag]data),
+		firstFunc,
+		lastFunc,
+		sync.Mutex{},
+		make(map[Key]map[Tag]*data),
 		0,
 	}
 }
@@ -68,9 +75,13 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
+	if len(c.callbackMap) == 0 && c.firstFunc != nil {
+		c.firstFunc()
+	}
+
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
-		tagMap = make(map[Tag]data)
+		tagMap = make(map[Tag]*data)
 		c.callbackMap[key] = tagMap
 	}
 
@@ -79,7 +90,7 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 
 	tag := Tag(c.nextTag)
 
-	tagMap[tag] = data{
+	tagMap[tag] = &data{
 		callback,
 		once,
 	}
@@ -91,24 +102,28 @@ func (c *Callbacks) add(key Key, callback interface{}, once bool) (Tag, error) {
 // error on success and a non-nil error in failure. Returns a nil error on
 // success and a non-nil error on failure.
 func (c *Callbacks) Remove(key Key, tag Tag) error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	return c.remove(key, tag, false)
+}
+
+func (c *Callbacks) remove(key Key, tag Tag, allowOnce bool) error {
 	if tag == 0 {
 		return fmt.Errorf("%s : invalid tag", c.name)
 	}
-
-	c.m.Lock()
-	defer c.m.Unlock()
 
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
 		return fmt.Errorf("%s : key not found", c.name)
 	}
 
-	data, ok := tagMap[tag]
+	d, ok := tagMap[tag]
 	if !ok {
 		return fmt.Errorf("%s : tag not found for given key", c.name)
 	}
 
-	if data.once == true {
+	if d.once && !allowOnce {
 		return fmt.Errorf("%s : can not remove single-use callback",
 			c.name)
 	}
@@ -119,6 +134,10 @@ func (c *Callbacks) Remove(key Key, tag Tag) error {
 		delete(c.callbackMap, key)
 	}
 
+	if len(c.callbackMap) == 0 && c.lastFunc != nil {
+		c.lastFunc()
+	}
+
 	return nil
 }
 
@@ -127,54 +146,49 @@ func (c *Callbacks) Remove(key Key, tag Tag) error {
 // interface{}) and a nil error on success and nil and a non-nil error on
 // failure.
 func (c *Callbacks) Callback(key Key, tag Tag) (interface{}, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
 	if tag == 0 {
 		return nil, fmt.Errorf("%s : invalid tag", c.name)
 	}
 
-	d, tagMap, err := c.getData(key, tag)
+	d, err := c.getData(key, tag)
 	if err != nil {
 		return nil, err
 	}
 
-	c.m.Lock()
-	defer c.m.Unlock()
-
 	if d.once {
-		delete(tagMap, tag)
-	}
-
-	if len(tagMap) == 0 {
-		delete(c.callbackMap, key)
+		err = c.remove(key, tag, true)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return d.callback, nil
 }
 
-func (c *Callbacks) getData(key Key,
-	tag Tag) (data, map[Tag]data, error) {
-	c.m.RLock()
-	defer c.m.RUnlock()
-
+func (c *Callbacks) getData(key Key, tag Tag) (*data, error) {
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
-		return data{}, nil, fmt.Errorf("%s : key not found", c.name)
+		return nil, fmt.Errorf("%s : key not found", c.name)
 	}
 
 	d, ok := tagMap[tag]
 	if !ok {
-		return data{}, nil, fmt.Errorf(
-			"%s : tag not found for given key", c.name)
+		return nil, fmt.Errorf("%s : tag not found for given key",
+			c.name)
 	}
 
-	return d, tagMap, nil
+	return d, nil
 }
 
 // CallbacksForKey returns all callbacks associated with the given key. Returns
 // a slice of callbacks (as interfaces{}) and a nil error on success and nil and
 // a non-nil error on failure.
 func (c *Callbacks) CallbacksForKey(key Key) ([]interface{}, error) {
-	c.m.RLock()
-	defer c.m.RUnlock()
+	c.m.Lock()
+	defer c.m.Unlock()
 
 	tagMap, ok := c.callbackMap[key]
 	if !ok {
@@ -184,8 +198,15 @@ func (c *Callbacks) CallbacksForKey(key Key) ([]interface{}, error) {
 	cbs := make([]interface{}, len(tagMap))
 
 	i := 0
-	for _, cb := range tagMap {
-		cbs[i] = cb
+	for tag, d := range tagMap {
+		if d.once {
+			err := c.remove(key, tag, true)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		cbs[i] = d.callback
 		i++
 	}
 
