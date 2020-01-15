@@ -2,6 +2,7 @@ package gimbal
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal"
@@ -13,14 +14,20 @@ type Gimbal struct {
 }
 
 func New(cc *internal.CommandController) *Gimbal {
-	cc.StartListening(dji.KeyGimbalConnection, func(result *dji.Result) {
-		if result.Value().(bool) {
-			// Enable chassis and gimbal updates.
-			fmt.Println("Gimbal connection established.")
-			cc.PerformAction(dji.KeyRobomasterOpenChassisSpeedUpdates, nil, nil)
-			cc.PerformAction(dji.KeyGimbalOpenAttitudeUpdates, nil, nil)
-		}
-	})
+	cc.StartListening(dji.KeyGimbalConnection,
+		func(result *dji.Result, wg *sync.WaitGroup) {
+			if result.Value().(bool) {
+				// Enable chassis and gimbal updates.
+				fmt.Println("Gimbal connection established.")
+				cc.PerformAction(
+					dji.KeyRobomasterOpenChassisSpeedUpdates, nil,
+					nil)
+				cc.PerformAction(dji.KeyGimbalOpenAttitudeUpdates, nil,
+					nil)
+			}
+
+			wg.Done()
+		})
 
 	return &Gimbal{
 		cc,

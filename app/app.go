@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"sync"
 
 	"git.bug-br.org.br/bga/robomasters1/app/internal"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji"
@@ -75,11 +76,14 @@ func (a *App) Start(textMode bool) error {
 
 	connectingIP := net.IP{}
 
-	a.cc.StartListening(dji.KeyAirLinkConnection, func(result *dji.Result) {
-		if result.Value().(bool) {
-			a.pl.SendACK(connectingIP)
-		}
-	})
+	a.cc.StartListening(dji.KeyAirLinkConnection,
+		func(result *dji.Result, wg *sync.WaitGroup) {
+			if result.Value().(bool) {
+				a.pl.SendACK(connectingIP)
+			}
+
+			wg.Done()
+		})
 
 	// Reset connection to defaults.
 	err = ub.SendEvent(unity.NewEventWithSubType(
