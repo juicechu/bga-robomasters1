@@ -53,10 +53,8 @@ func New(name string, firstFunc KeyFunc, lastFunc KeyFunc) *Callbacks {
 // AddSingleShot adds a new callback that will only fire once. The callback will
 // be automatically removed from the map when Callback() returns it. Returns a
 // nil error on success and a non-nil error on failure.
-func (c *Callbacks) AddSingleShot(key Key, callback interface{}) error {
-	_, err := c.add(key, callback, true)
-
-	return err
+func (c *Callbacks) AddSingleShot(key Key, callback interface{}) (Tag, error) {
+	return c.add(key, callback, true)
 }
 
 // AddContinous adds a new callback that will fire continuously. When needed it

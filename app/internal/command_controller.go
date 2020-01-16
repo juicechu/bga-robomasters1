@@ -111,8 +111,11 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 		return fmt.Errorf("key can not be acted upon")
 	}
 
+	var err error
+	tag := callbacks.Tag(0)
+
 	if resultHandler != nil {
-		err := c.performActionCallbacks.AddSingleShot(
+		tag, err = c.performActionCallbacks.AddSingleShot(
 			callbacks.Key(key), resultHandler)
 		if err != nil {
 			return err
@@ -121,7 +124,6 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 
 	var data []byte
 	if param != nil {
-		var err error
 		data, err = json.Marshal(param)
 		if err != nil {
 			return err
@@ -130,7 +132,7 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 
 	bridge.Instance().SendEvent(unity.NewEventWithSubType(
 		unity.EventTypePerformAction, uint64(key.Value())), data,
-		uint64(key.Value()))
+		uint64(tag))
 
 	return nil
 }
@@ -144,8 +146,11 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 		return fmt.Errorf("key can not be written to")
 	}
 
+	var err error
+	tag := callbacks.Tag(0)
+
 	if resultHandler != nil {
-		err := c.setValueForKeyCallbacks.AddSingleShot(
+		tag, err = c.setValueForKeyCallbacks.AddSingleShot(
 			callbacks.Key(key), resultHandler)
 		if err != nil {
 			return err
@@ -154,7 +159,6 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 
 	var data []byte
 	if param != nil {
-		var err error
 		data, err = json.Marshal(param)
 		if err != nil {
 			return err
@@ -163,7 +167,7 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 
 	bridge.Instance().SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeSetValue, uint64(key.Value())), data,
-		uint64(key.Value()))
+		uint64(tag))
 
 	return nil
 }
