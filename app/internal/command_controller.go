@@ -20,6 +20,7 @@ type CommandController struct {
 
 	startListeningCallbacks *callbacks.Callbacks
 	performActionCallbacks  *callbacks.Callbacks
+	setValueForKeyCallbacks *callbacks.Callbacks
 }
 
 func NewCommandController() (*CommandController, error) {
@@ -42,12 +43,16 @@ func NewCommandController() (*CommandController, error) {
 	performActionCallbacks := callbacks.New(
 		"CommandController/PerformAction", nil, nil)
 
+	setValueForKeyCallbacks := callbacks.New(
+		"CommandController/SetValueForKey", nil, nil)
+
 	cc := &CommandController{
 		startListeningCallbacks: startListeningCallbacks,
 		performActionCallbacks:  performActionCallbacks,
+		setValueForKeyCallbacks: setValueForKeyCallbacks,
 	}
 
-	cc.GenericController = NewGenericController(cc)
+	cc.GenericController = NewGenericController(cc.HandleEvent)
 
 	var err error
 	err = cc.StartControllingEvent(unity.EventTypeGetValue)
@@ -130,6 +135,39 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 	return nil
 }
 
+func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
+	resultHandler ResultHandler) error {
+	if key < 1 || key >= dji.KeysCount {
+		return fmt.Errorf("invalid key")
+	}
+	if (key.AccessType() & dji.KeyAccessTypeWrite) == 0 {
+		return fmt.Errorf("key can not be written to")
+	}
+
+	if resultHandler != nil {
+		err := c.setValueForKeyCallbacks.AddSingleShot(
+			callbacks.Key(key), resultHandler)
+		if err != nil {
+			return err
+		}
+	}
+
+	var data []byte
+	if param != nil {
+		var err error
+		data, err = json.Marshal(param)
+		if err != nil {
+			return err
+		}
+	}
+
+	bridge.Instance().SendEvent(unity.NewEventWithSubType(
+		unity.EventTypeSetValue, uint64(key.Value())), data,
+		uint64(key.Value()))
+
+	return nil
+}
+
 func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 	tag uint64, wg *sync.WaitGroup) {
 	var value interface{}
@@ -206,7 +244,7 @@ func (c *CommandController) handlePerformAction(key uint64,
 
 	result := dji.NewResultFromJSON([]byte(stringValue))
 
-	cb.(ResultCallback)(result, nil)
+	cb.(ResultHandler)(result, nil)
 }
 
 func (c *CommandController) Teardown() error {

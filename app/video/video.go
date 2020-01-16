@@ -23,7 +23,7 @@ func New() (*Video, error) {
 		make(map[int]DataHandlerFunc),
 	}
 
-	vc.GenericController = internal.NewGenericController(vc)
+	vc.GenericController = internal.NewGenericController(vc.HandleEvent)
 
 	var err error
 	err = vc.StartControllingEvent(unity.EventTypeGetNativeTexture)

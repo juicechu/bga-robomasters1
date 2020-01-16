@@ -10,12 +10,11 @@ import (
 	"git.bug-br.org.br/bga/robomasters1/app/internal/support/callbacks"
 )
 
-// EventHandler is the required interface for types that want to listen to Unity
-// Events. Implementations are required to call wg.Done() before they return.
-type EventHandler interface {
-	HandleEvent(event *unity.Event, data []byte, tag uint64,
-		wg *sync.WaitGroup)
-}
+// EventHandler is the required prototype for functiomns that want to process
+// Unity events. Implementations are required to call wg.Done() before they
+// return.
+type EventHandler func(event *unity.Event, data []byte, tag uint64,
+	wg *sync.WaitGroup)
 
 // unityBridge is a frontend to DJI's Unity Bridge code. The type is not
 // exported because it is currently implemented as a singleton.
@@ -231,7 +230,7 @@ func (b *unityBridge) unityEventCallback(eventCode uint64, data []byte,
 
 	for _, handler := range eventHandlers {
 		wg.Add(1)
-		go handler.(EventHandler).HandleEvent(event, data, tag, &wg)
+		go handler.(EventHandler)(event, data, tag, &wg)
 	}
 
 	wg.Wait()
