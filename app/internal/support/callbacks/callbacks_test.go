@@ -33,12 +33,12 @@ func TestCallbacks_AddSingleShot_Errors(t *testing.T) {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	err := cbs.AddSingleShot(Key(0), nil)
+	_, err := cbs.AddSingleShot(Key(0), nil)
 	if err == nil {
 		t.Fatalf("expected non-nil error, got nil")
 	}
 
-	err = cbs.AddSingleShot(Key(0), "non-function")
+	_, err = cbs.AddSingleShot(Key(0), "non-function")
 	if err == nil {
 		t.Fatalf("expected non-nil error, got nil")
 	}
@@ -50,7 +50,7 @@ func TestCallbacks_AddSingleShot_Success(t *testing.T) {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	err := cbs.AddSingleShot(Key(0), func() {})
+	_, err := cbs.AddSingleShot(Key(0), func() {})
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
@@ -64,11 +64,11 @@ func TestCallbacks_AddSingleShot_FirstFunc_Success(t *testing.T) {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	err := cbs.AddSingleShot(Key(0), func() {})
+	_, err := cbs.AddSingleShot(Key(0), func() {})
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
-	err = cbs.AddSingleShot(Key(0), func() {})
+	_, err = cbs.AddSingleShot(Key(0), func() {})
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
@@ -152,7 +152,7 @@ func TestCallbacks_Remove_Errors(t *testing.T) {
 		t.Fatalf("expected non-nil error, got nil")
 	}
 
-	err = cbs.AddSingleShot(Key(0), func() {})
+	tag, err := cbs.AddSingleShot(Key(0), func() {})
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
@@ -161,7 +161,7 @@ func TestCallbacks_Remove_Errors(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected non-nil error, got nil")
 	}
-	err = cbs.Remove(Key(0), Tag(1)) // Can not remove single-shot callback.
+	err = cbs.Remove(Key(0), tag) // Can not remove single-shot callback.
 	if err == nil {
 		t.Fatalf("expected non-nil error, got nil")
 	}
@@ -303,12 +303,12 @@ func TestCallbacks_SingleShot_Success(t *testing.T) {
 
 	i := 0
 
-	err := cbs.AddSingleShot(Key(0), func() { i++ })
+	tag, err := cbs.AddSingleShot(Key(0), func() { i++ })
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
 
-	cb, err := cbs.Callback(Key(0), Tag(1))
+	cb, err := cbs.Callback(Key(0), tag)
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
@@ -329,7 +329,7 @@ func TestCallbacks_SingleShot_Success(t *testing.T) {
 
 	}
 
-	cb, err = cbs.Callback(Key(0), Tag(1))
+	cb, err = cbs.Callback(Key(0), tag)
 	if err == nil {
 		t.Fatalf("expected non-nil error, got nil")
 	}
@@ -353,7 +353,7 @@ func TestCallbacks_CallbacksForKey_Success(t *testing.T) {
 		t.Fatalf("expected non-nil callbacks, got nil")
 	}
 
-	err := cbs.AddSingleShot(Key(0), func() {})
+	_, err := cbs.AddSingleShot(Key(0), func() {})
 	if err != nil {
 		t.Fatalf("expected nil error, got %q", err)
 	}
