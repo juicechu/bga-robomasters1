@@ -178,7 +178,7 @@ func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 
 	// TODO(bga): Apparently, the unity bridge reserves the upper 8 bits
 	//  for reporting back type information. Double check this.
-	dataType := (tag >> 56) & 0xff
+	dataType := tag >> 56
 	switch dataType {
 	case 0:
 		value = string(data)
