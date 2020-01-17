@@ -87,8 +87,8 @@ func (c *CommandController) StartListening(key dji.Key,
 		return 0, fmt.Errorf("key is not readable")
 	}
 
-	tag, err := c.startListeningCallbacks.AddContinuous(callbacks.Key(key),
-		resultHandler)
+	tag, err := c.startListeningCallbacks.AddContinuous(callbacks.Key(
+		key.Value()), resultHandler)
 
 	return uint64(tag), err
 }
@@ -116,7 +116,7 @@ func (c *CommandController) PerformAction(key dji.Key, param interface{},
 
 	if resultHandler != nil {
 		tag, err = c.performActionCallbacks.AddSingleShot(
-			callbacks.Key(key), resultHandler)
+			callbacks.Key(key.Value()), resultHandler)
 		if err != nil {
 			return err
 		}
@@ -151,7 +151,7 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 
 	if resultHandler != nil {
 		tag, err = c.setValueForKeyCallbacks.AddSingleShot(
-			callbacks.Key(key), resultHandler)
+			callbacks.Key(key.Value()), resultHandler)
 		if err != nil {
 			return err
 		}
@@ -170,6 +170,11 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 		uint64(tag))
 
 	return nil
+}
+
+func (c *CommandController) DirectSendValue(key dji.Key, value uint64) {
+	bridge.Instance().SendEvent(unity.NewEventWithSubType(
+		unity.EventTypePerformAction, uint64(key.Value())), value)
 }
 
 func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
