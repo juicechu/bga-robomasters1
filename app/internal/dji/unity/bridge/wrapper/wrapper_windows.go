@@ -24,6 +24,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"github.com/mattn/go-pointer"
 )
 
@@ -124,32 +125,21 @@ func (w *Windows) UnityBridgeUninitialize() {
 }
 
 func (w *Windows) UnitySendEvent(eventCode uint64, data []byte, tag uint64) {
-	fmt.Printf("UnitySendEvent(eventCode=%d, data=%v, tag=%d)\n", eventCode,
-		data, tag)
-	var dataPtr unsafe.Pointer = nil
-	if len(data) != 0 {
-		dataPtr = unsafe.Pointer(&data[0])
+	event := unity.NewEventFromCode(eventCode)
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode << 32, eventCode & 0xffffffff)
+		return
 	}
 
-	w.procMap["UnitySendEvent"].Call(uintptr(eventCode), uintptr(dataPtr),
-		uintptr(tag))
-}
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode << 32, eventCode & 0xffffffff)
+		return
+	}
 
-func (w *Windows) UnitySendEventWithString(eventCode uint64, data string,
-	tag uint64) {
-	fmt.Printf("UnitySendEventWithString(eventCode=%d, data=%s, tag=%d)\n",
-		eventCode, data, tag)
-	cData := unsafe.Pointer(C.CString(data))
-
-	w.procMap["UnitySendEventWithString"].Call(uintptr(eventCode),
-		uintptr(cData), uintptr(tag))
-
-	C.free(cData)
-}
-
-func (w *Windows) UnitySendEventWithNumber(eventCode, data, tag uint64) {
-	fmt.Printf("UnitySendEventWithNumber(eventCode=%d, data=%d, tag=%d)\n",
-		eventCode, data, tag)
+	fmt.Printf("UnitySendEventWithNumber(event=%#+v, data=%d, tag=%d)\n",
+		event, data, tag)
 	w.procMap["UnitySendEventWithNumber"].Call(uintptr(eventCode),
 		uintptr(data), uintptr(tag))
 }

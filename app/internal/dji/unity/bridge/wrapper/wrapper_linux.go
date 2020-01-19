@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/dji/unity/bridge/wrapper/winebridge"
 )
 
@@ -17,7 +18,7 @@ type Linux struct {
 	wineBridge *winebridge.WineBridge
 
 	m                sync.RWMutex
-	eventCallbackMap map[uint64]EventCallback
+	eventCallbackMap map[unity.EventType]EventCallback
 }
 
 func New(string) (Wrapper, error) {
@@ -46,7 +47,7 @@ func New(string) (Wrapper, error) {
 		readPipe:         localReadPipe,
 		writePipe:        localWritePipe,
 		wineBridge:       wineBridge,
-		eventCallbackMap: make(map[uint64]EventCallback),
+		eventCallbackMap: make(map[unity.EventType]EventCallback),
 	}
 
 	go l.readLoop()
@@ -164,16 +165,23 @@ func (l *Linux) UnitySetEventCallback(eventCode uint64,
 	l.m.Lock()
 	defer l.m.Unlock()
 
-	_, ok := l.eventCallbackMap[eventCode]
+	event := unity.NewEventFromCode(eventCode)
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode << 32, eventCode & 0xffffffff)
+		return
+	}
+
+	_, ok := l.eventCallbackMap[event.Type()]
 
 	add := false
 	if eventCallback == nil {
 		if ok {
-			delete(l.eventCallbackMap, eventCode)
+			delete(l.eventCallbackMap, event.Type())
 		}
 	} else {
 		if !ok {
-			l.eventCallbackMap[eventCode] = eventCallback
+			l.eventCallbackMap[event.Type()] = eventCallback
 		}
 
 		add = true
@@ -233,10 +241,17 @@ func (l *Linux) maybeRunCallback(eventCode uint64, data []byte, tag uint64) {
 	l.m.RLock()
 	defer l.m.RUnlock()
 
-	callback, ok := l.eventCallbackMap[eventCode]
+	event := unity.NewEventFromCode(eventCode)
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode << 32, eventCode & 0xffffffff)
+		return
+	}
+
+	callback, ok := l.eventCallbackMap[event.Type()]
 	if !ok {
-		log.Printf("No callback for event code %d.\n",
-			eventCode)
+		log.Printf("No callback for event %s (tag=%d).\n",
+			unity.EventTypeName(event.Type()), tag)
 		return
 	}
 
