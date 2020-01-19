@@ -128,18 +128,70 @@ func (w *Windows) UnitySendEvent(eventCode uint64, data []byte, tag uint64) {
 	event := unity.NewEventFromCode(eventCode)
 	if event == nil {
 		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
-			eventCode, eventCode << 32, eventCode & 0xffffffff)
+			eventCode, eventCode<<32, eventCode&0xffffffff)
 		return
 	}
 
 	if event == nil {
 		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
-			eventCode, eventCode << 32, eventCode & 0xffffffff)
+			eventCode, eventCode<<32, eventCode&0xffffffff)
 		return
 	}
 
-	fmt.Printf("UnitySendEventWithNumber(event=%#+v, data=%d, tag=%d)\n",
+	fmt.Printf("UnitySendEvent(event=%v, data=%v, tag=%d)\n",
 		event, data, tag)
+
+	var dataPtr unsafe.Pointer = nil
+	if len(data) != 0 {
+		dataPtr = unsafe.Pointer(&data[0])
+	}
+
+	w.procMap["UnitySendEvent"].Call(uintptr(eventCode),
+		uintptr(dataPtr), uintptr(tag))
+}
+
+func (w *Windows) UnitySendEventWithString(eventCode uint64, data string, tag uint64) {
+	event := unity.NewEventFromCode(eventCode)
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode<<32, eventCode&0xffffffff)
+		return
+	}
+
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode<<32, eventCode&0xffffffff)
+		return
+	}
+
+	fmt.Printf("UnitySendEventWithString(event=%v, data=%s, tag=%d)\n",
+		event, data, tag)
+
+	cData := unsafe.Pointer(C.CString(data))
+
+	w.procMap["UnitySendEventWithString"].Call(uintptr(eventCode),
+		uintptr(cData), uintptr(tag))
+
+	C.free(cData)
+}
+
+func (w *Windows) UnitySendEventWithNumber(eventCode uint64, data uint64, tag uint64) {
+	event := unity.NewEventFromCode(eventCode)
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode<<32, eventCode&0xffffffff)
+		return
+	}
+
+	if event == nil {
+		log.Printf("Unknown event with code %d (Type:%d, SubType:%d).\n",
+			eventCode, eventCode<<32, eventCode&0xffffffff)
+		return
+	}
+
+	fmt.Printf("UnitySendEventWithNumber(event=%v, data=%d, tag=%d)\n",
+		event, data, tag)
+
 	w.procMap["UnitySendEventWithNumber"].Call(uintptr(eventCode),
 		uintptr(data), uintptr(tag))
 }
