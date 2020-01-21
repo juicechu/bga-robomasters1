@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"git.bug-br.org.br/bga/robomasters1/app"
-	"git.bug-br.org.br/bga/robomasters1/app/gimbal"
+	"git.bug-br.org.br/bga/robomasters1/app/controller"
 	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
 	"git.bug-br.org.br/bga/robomasters1/app/video"
 
@@ -79,17 +79,16 @@ func main() {
 
 	v.StartVideo()
 
-	g := gimbal.New(a.CommandController())
+	c := controller.New(a.CommandController())
 
 	// TODO(bga): HACK, fix me.
 	time.Sleep(5 * time.Second)
 
 	go func() {
-		g.MoveToAbsolutePosition(20, 20, 100*time.Millisecond)
-		time.Sleep(500 * time.Millisecond)
-		g.MoveToAbsolutePosition(-20, -20, 100*time.Millisecond)
-		time.Sleep(500 * time.Millisecond)
-		g.ResetPosition()
+		// Move the gimbal around.
+		for i := 0; i < 100; i++ {
+			c.Move(0.0, 0.0, 0.0, 1.0, false, true, 0)
+		}
 	}()
 
 	w.ShowAndRun()
