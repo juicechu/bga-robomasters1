@@ -13,7 +13,6 @@ const (
 	KeyGimbalControlMode
 	KeyGimbalOpenAttitudeUpdates
 	KeyGimbalResetPosition
-	KeyMainControllerChassisCarControlMode
 	KeyMainControllerConnection
 	KeyMainControllerVirtualStick
 	KeyRobomasterOpenChassisSpeedUpdates
@@ -79,8 +78,6 @@ var (
 			KeyDataTypeVoid, KeyAccessTypeAction},
 		KeyGimbalResetPosition: keyAttributes{67108870, KeyDataTypeLong,
 			KeyAccessTypeAction},
-		KeyMainControllerChassisCarControlMode: keyAttributes{
-			33554440, KeyDataTypeLong, KeyAccessTypeWrite},
 		KeyMainControllerConnection: keyAttributes{33554433,
 			KeyDataTypeBool, KeyAccessTypeRead},
 		KeyMainControllerVirtualStick: keyAttributes{33554436,
@@ -102,7 +99,6 @@ var (
 		67108877:  KeyGimbalAngleFrontPitchRotation,
 		67108882:  KeyGimbalOpenAttitudeUpdates,
 		67108870:  KeyGimbalResetPosition,
-		33554440:  KeyMainControllerChassisCarControlMode,
 		33554433:  KeyMainControllerConnection,
 		33554436:  KeyMainControllerVirtualStick,
 		33554474:  KeyRobomasterOpenChassisSpeedUpdates,
