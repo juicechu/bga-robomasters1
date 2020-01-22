@@ -79,6 +79,8 @@ func main() {
 
 	v.StartVideo()
 
+	time.Sleep(5 * time.Second)
+
 	c := controller.New(a.CommandController())
 
 	// TODO(bga): HACK, fix me.
@@ -87,7 +89,7 @@ func main() {
 	go func() {
 		// Move the gimbal around.
 		for i := 0; i < 100; i++ {
-			c.Move(0.0, 0.0, 0.0, 1.0, false, true, 0)
+			c.Move(0.5, 0.5, 0.5, 1.0, true, true, 0)
 		}
 	}()
 
