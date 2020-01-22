@@ -42,12 +42,12 @@ func (g *Gimbal) MoveToAbsolutePosition(yawAngle, pitchAngle int,
 	duration time.Duration) error {
 
 	param := absoluteRotationParameter{
-		int16(yawAngle * 10),
-		int16(pitchAngle * 10),
-		int16(duration.Milliseconds()),
+		Time: int16(duration.Milliseconds()),
 	}
 
 	if yawAngle != 0 {
+		param.Pitch = 0
+		param.Yaw = int16(yawAngle * 10)
 		err := g.cc.PerformAction(dji.KeyGimbalAngleFrontYawRotation,
 			param, nil)
 		if err != nil {
@@ -56,6 +56,8 @@ func (g *Gimbal) MoveToAbsolutePosition(yawAngle, pitchAngle int,
 	}
 
 	if pitchAngle != 0 {
+		param.Pitch = int16(pitchAngle * 10)
+		param.Yaw = 0
 		err := g.cc.PerformAction(dji.KeyGimbalAngleFrontPitchRotation,
 			param, nil)
 		if err != nil {
