@@ -49,11 +49,11 @@ func (c *Controller) Move(chassisY, chassisX, gimbalY, gimbalX float32,
 		intGimbalControl = 1
 	}
 
-	value := uint64(interpolatedChassisX)
-	value |= uint64(interpolatedChassisY) << 11
-	value |= intChassisControl << 22
+	value := uint64(interpolatedChassisY)
+	value |= uint64(interpolatedChassisX) << 11
+	value |= uint64(interpolatedGimbalY) << 22
 	value |= uint64(interpolatedGimbalX) << 33
-	value |= uint64(interpolatedGimbalY) << 44
+	value |= intChassisControl << 44
 	value |= intGimbalControl << 45
 	value |= controlMode << 46
 
