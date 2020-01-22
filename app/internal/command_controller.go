@@ -166,7 +166,7 @@ func (c *CommandController) SetValueForKey(key dji.Key, param interface{},
 	}
 
 	bridge.Instance().SendEvent(unity.NewEventWithSubType(
-		unity.EventTypeSetValue, uint64(key.Value())), data,
+		unity.EventTypeSetValue, uint64(key.Value())), string(data),
 		uint64(tag))
 
 	return nil
@@ -203,6 +203,8 @@ func (c *CommandController) HandleEvent(event *unity.Event, data []byte,
 		c.handleStartListening(event.SubType(), value)
 	case unity.EventTypePerformAction:
 		c.handlePerformAction(event.SubType(), value, adjustedTag)
+	case unity.EventTypeSetValue:
+		c.handleSetValue(event.SubType(), value, adjustedTag)
 	default:
 		log.Printf("Unsupported event %s. Value:%v. Tag:%d\n",
 			unity.EventTypeName(event.Type()), value, tag)
@@ -238,6 +240,25 @@ func (c *CommandController) handleStartListening(key uint64,
 }
 
 func (c *CommandController) handlePerformAction(key uint64,
+	value interface{}, tag uint64) {
+	stringValue, ok := value.(string)
+	if !ok {
+		panic("unexpected non-string value")
+	}
+
+	cb, err := c.startListeningCallbacks.Callback(callbacks.Key(key),
+		callbacks.Tag(tag))
+	if err != nil {
+		// No callback set. That is fine.
+		return
+	}
+
+	result := dji.NewResultFromJSON([]byte(stringValue))
+
+	cb.(ResultHandler)(result, nil)
+}
+
+func (c *CommandController) handleSetValue(key uint64,
 	value interface{}, tag uint64) {
 	stringValue, ok := value.(string)
 	if !ok {
