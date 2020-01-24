@@ -16,6 +16,7 @@ const (
 	KeyMainControllerConnection
 	KeyMainControllerVirtualStick
 	KeyRobomasterOpenChassisSpeedUpdates
+	KeyRobomasterSystemConnection
 	KeyRobomasterSystemFunctionEnable
 	KeysCount
 	// TODO(bga): Add keys here as needed.
@@ -84,6 +85,8 @@ var (
 			KeyDataTypeControllerParameter, KeyAccessTypeAction},
 		KeyRobomasterOpenChassisSpeedUpdates: keyAttributes{33554474,
 			KeyDataTypeVoid, KeyAccessTypeAction},
+		KeyRobomasterSystemConnection: keyAttributes{83886081,
+			KeyDataTypeBool, KeyAccessTypeRead},
 		KeyRobomasterSystemFunctionEnable: keyAttributes{83886147,
 			KeyDataTypeFunctionEnableParameter,
 			KeyAccessTypeAction},
@@ -102,6 +105,7 @@ var (
 		33554433:  KeyMainControllerConnection,
 		33554436:  KeyMainControllerVirtualStick,
 		33554474:  KeyRobomasterOpenChassisSpeedUpdates,
+		83886081:  KeyRobomasterSystemConnection,
 		83886147:  KeyRobomasterSystemFunctionEnable,
 	}
 )
