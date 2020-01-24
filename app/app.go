@@ -50,6 +50,8 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 
 func NewWithAppID(countryCode, ssId, password, bssId string,
 	appId uint64) (*App, error) {
+	log.Printf("Using app ID %d.\n", appId)
+
 	cc, err := internal.NewCommandController()
 	if err != nil {
 		return nil, err
