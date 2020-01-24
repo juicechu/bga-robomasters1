@@ -32,17 +32,24 @@ func New(countryCode, ssId, password, bssId string) (*App, error) {
 		return nil, err
 	}
 
-	return NewWithAppID(countryCode, ssId, password, bssId, appId)
-}
-
-func NewWithAppID(countryCode, ssId, password, bssId string,
-	appId uint64) (*App, error) {
 	qrc, err := internalqrcode.NewQRCode(appId, countryCode, ssId,
 		password, bssId)
 	if err != nil {
 		return nil, err
 	}
 
+	a, err := NewWithAppID(countryCode, ssId, password, bssId, appId)
+	if err != nil {
+		return nil, err
+	}
+
+	a.qrc = qrc
+
+	return a, nil
+}
+
+func NewWithAppID(countryCode, ssId, password, bssId string,
+	appId uint64) (*App, error) {
 	cc, err := internal.NewCommandController()
 	if err != nil {
 		return nil, err
@@ -50,21 +57,23 @@ func NewWithAppID(countryCode, ssId, password, bssId string,
 
 	return &App{
 		appId,
-		qrc,
+		nil,
 		pairing.NewListener(appId),
 		cc,
 	}, nil
 }
 
 func (a *App) Start(textMode bool) error {
-	var err error
-	if textMode {
-		err = a.showTextQRCode()
-	} else {
-		err = a.showPNGQRCode()
-	}
-	if err != nil {
-		return fmt.Errorf("error showing QR code: %w", err)
+	if a.qrc != nil {
+		var err error
+		if textMode {
+			err = a.showTextQRCode()
+		} else {
+			err = a.showPNGQRCode()
+		}
+		if err != nil {
+			return fmt.Errorf("error showing QR code: %w", err)
+		}
 	}
 
 	// Setup Unity Bridge.
@@ -86,7 +95,7 @@ func (a *App) Start(textMode bool) error {
 		})
 
 	// Reset connection to defaults.
-	err = ub.SendEvent(unity.NewEventWithSubType(
+	err := ub.SendEvent(unity.NewEventWithSubType(
 		unity.EventTypeConnection, 2), "192.168.2.1")
 	if err != nil {
 		panic(err)
