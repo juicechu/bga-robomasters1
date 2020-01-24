@@ -11,9 +11,14 @@ import (
 
 type Gimbal struct {
 	cc *internal.CommandController
+
+	connectionWg *sync.WaitGroup
 }
 
 func New(cc *internal.CommandController) *Gimbal {
+	connectionWg := sync.WaitGroup{}
+
+	connectionWg.Add(1)
 	cc.StartListening(dji.KeyGimbalConnection,
 		func(result *dji.Result, wg *sync.WaitGroup) {
 			if result.Value().(bool) {
@@ -24,6 +29,22 @@ func New(cc *internal.CommandController) *Gimbal {
 					nil)
 				cc.PerformAction(dji.KeyGimbalOpenAttitudeUpdates, nil,
 					nil)
+				connectionWg.Done()
+			} else {
+				fmt.Println("Gimbal connection failed.")
+			}
+
+			wg.Done()
+		})
+
+	connectionWg.Add(1)
+	cc.StartListening(dji.KeyRobomasterSystemConnection,
+		func(result *dji.Result, wg *sync.WaitGroup) {
+			if result.Value().(bool) {
+				fmt.Println("System connection established.")
+				connectionWg.Done()
+			} else {
+				fmt.Println("System connection failed.")
 			}
 
 			wg.Done()
@@ -31,6 +52,7 @@ func New(cc *internal.CommandController) *Gimbal {
 
 	return &Gimbal{
 		cc,
+		&connectionWg,
 	}
 }
 
@@ -66,4 +88,8 @@ func (g *Gimbal) MoveToAbsolutePosition(yawAngle, pitchAngle int,
 	}
 
 	return nil
+}
+
+func (g *Gimbal) WaitForConnection() {
+	g.connectionWg.Wait()
 }
