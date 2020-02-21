@@ -2,18 +2,12 @@ package main
 
 import (
 	"flag"
-	"image"
-	"sync"
-	"time"
+	"image/color"
 
 	"git.bug-br.org.br/bga/robomasters1/app"
-	"git.bug-br.org.br/bga/robomasters1/app/controller"
-	"git.bug-br.org.br/bga/robomasters1/app/internal/rgb"
-	"git.bug-br.org.br/bga/robomasters1/app/video"
-
-	"fyne.io/fyne"
-	fyneapp "fyne.io/fyne/app"
-	"fyne.io/fyne/canvas"
+	"github.com/EngoEngine/ecs"
+	"github.com/EngoEngine/engo"
+	"github.com/EngoEngine/engo/common"
 )
 
 var (
@@ -23,31 +17,29 @@ var (
 	textMode = flag.Bool("textmode", false, "enable/disable text mode")
 	appID    = flag.Uint64("appid", 0, "if provided, use this app ID "+
 		"instead of creating a new one")
-
-	baseImg *rgb.Image
-	img     *canvas.Image
 )
+
+type DefaultScene struct{}
+
+func (*DefaultScene) Preload() {
+}
+
+func (scene *DefaultScene) Setup(u engo.Updater) {
+	w, _ := u.(*ecs.World)
+
+	common.SetBackground(color.RGBA{R: 0, G: 255, B: 0, A: 255})
+
+	w.AddSystem(&common.RenderSystem{})
+	w.AddSystem(&VideoSystem{})
+	w.AddSystem(&common.FPSSystem{
+		Display: true,
+	})
+}
+
+func (*DefaultScene) Type() string { return "RobomasterS1" }
 
 func main() {
 	flag.Parse()
-
-	fyneApp := fyneapp.New()
-	baseImg = rgb.NewImage(
-		image.Rectangle{
-			image.Point{0, 0},
-			image.Point{1280, 720},
-		},
-	)
-	img = canvas.NewImageFromImage(baseImg)
-	img.FillMode = canvas.ImageFillOriginal
-
-	w := fyneApp.NewWindow("Robomaster S1")
-	w.Resize(fyne.Size{
-		Width:  1280,
-		Height: 720,
-	})
-	w.CenterOnScreen()
-	w.SetContent(img)
 
 	var a *app.App
 	var err error
@@ -66,39 +58,10 @@ func main() {
 		panic(err)
 	}
 
-	v, err := video.New()
-	if err != nil {
-		panic(err)
+	opts := engo.RunOptions{
+		Title:  "Robomaster S1",
+		Width:  1280,
+		Height: 720,
 	}
-
-	index, err := v.AddDataHandler(videoHandler)
-	if err != nil {
-		panic(err)
-	}
-	defer v.RemoveDataHandler(index)
-
-	v.StartVideo()
-
-	time.Sleep(5 * time.Second)
-
-	c := controller.New(a.CommandController())
-
-	// TODO(bga): HACK, fix me.
-	time.Sleep(5 * time.Second)
-
-	go func() {
-		// Move the gimbal around.
-		for i := 0; i < 100; i++ {
-			c.Move(0.5, 0.5, 0.5, 1.0, true, true, 0)
-		}
-	}()
-
-	w.ShowAndRun()
-}
-
-func videoHandler(data []byte, wg *sync.WaitGroup) {
-	baseImg.Pix = data
-	img.Refresh()
-
-	wg.Done()
+	engo.Run(opts, &DefaultScene{})
 }

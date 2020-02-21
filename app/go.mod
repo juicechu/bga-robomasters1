@@ -4,6 +4,8 @@ go 1.13
 
 require (
 	fyne.io/fyne v1.2.1
+	github.com/EngoEngine/ecs v1.0.3
+	github.com/EngoEngine/engo v1.0.4
 	github.com/felixge/pidctrl v0.0.0-20160307080219-7b13bcae7243
 	github.com/google/uuid v1.1.1
 	github.com/mattn/go-pointer v0.0.0-20190911064623-a0a44394634f
