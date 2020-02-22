@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"sync"
+	"unsafe"
 
 	"git.bug-br.org.br/bga/robomasters1/app/video"
 	"github.com/EngoEngine/ecs"
@@ -85,9 +86,26 @@ func (s *VideoSystem) DataHandler(data []byte, wg *sync.WaitGroup) {
 			image.Point{1280, 720},
 		},
 	)
-	img.Pix = data
+	img.Pix = NRGBA(data)
 
 	s.frameCh <- img
 
 	wg.Done()
+}
+
+func NRGBA(rgbData []byte) []byte {
+	numPixels := len(rgbData) / 3
+
+	nrgbaData := make([]byte, numPixels*4)
+
+	intNRGBAData := *(*[]uint32)(unsafe.Pointer(&nrgbaData))
+	intNRGBAData = intNRGBAData[:len(nrgbaData)/4]
+
+	for i, j := 0, 0; i < len(rgbData); i, j = i+3, j+1 {
+		intRGB := (*(*uint32)(unsafe.Pointer(&rgbData[i]))) |
+			(0b11111111 << 24)
+		intNRGBAData[j] = intRGB
+	}
+
+	return nrgbaData
 }

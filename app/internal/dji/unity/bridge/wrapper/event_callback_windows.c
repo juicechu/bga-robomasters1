@@ -27,17 +27,12 @@ void event_callback(void* context, va_alist alist) {
         int length = va_arg_int(alist);
         unsigned long long tag = va_arg_ulonglong(alist);
 
-	void* nrgba_data = malloc(length + (length / 3));
-	rgb_to_nrgba((char*)nrgba_data, (char*)data, length);
-	
 	// Create a Go slice with the data.
 	GoSlice data_slice;
-	data_slice.data = nrgba_data;
+	data_slice.data = data;
 	data_slice.len = length;
 	data_slice.cap = length;
 
 	eventCallbackGo(context, event_code, data_slice, tag);
-
-	free(nrgba_data);
 }
 
