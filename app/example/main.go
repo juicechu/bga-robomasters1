@@ -10,7 +10,7 @@ import (
 var (
 	ssID = flag.String("ssid", "testssid",
 		"wifi network to connect to")
-	password = flag.String("password", "zwergschnauzer", "wifi password")
+	password = flag.String("password", "testpassword", "wifi password")
 	appID    = flag.Uint64("appid", 0, "if provided, use this app ID "+
 		"instead of creating a new one")
 )
