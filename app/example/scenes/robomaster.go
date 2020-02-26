@@ -43,13 +43,8 @@ func (r *Robomaster) Setup(u engo.Updater) {
 		panic(err)
 	}
 
-	//basicEntity := ecs.NewBasic()
-
-	//robomasterEntity := entities.Robomaster{
-	//	&basicEntity,
-	//	robomasterComponent,
-	//}
-
+	// Hack!
+	// TODO(bga): Add waiting for full connection to be ablt to remove this.
 	time.Sleep(5 * time.Second)
 
 	controllerComponent, err := components.NewController(
@@ -61,6 +56,9 @@ func (r *Robomaster) Setup(u engo.Updater) {
 		&basicEntity,
 		controllerComponent,
 	}
+
+	// Disable cursor.
+	engo.SetCursorVisibility(false)
 
 	w, _ := u.(*ecs.World)
 
