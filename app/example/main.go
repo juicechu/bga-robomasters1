@@ -24,8 +24,7 @@ func main() {
 		Height:        720,
 		VSync:         true,
 		ScaleOnResize: true,
-		FPSLimit:      30,
-		Fullscreen:    true,
+		FPSLimit:      60,
 	}
 
 	engo.Run(opts, &scenes.Robomaster{
