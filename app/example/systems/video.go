@@ -1,28 +1,29 @@
-package main
+package systems
 
 import (
 	"image"
 	"sync"
 	"unsafe"
 
+	"git.bug-br.org.br/bga/robomasters1/app/example2/entities"
 	"git.bug-br.org.br/bga/robomasters1/app/video"
 	"github.com/EngoEngine/ecs"
 	"github.com/EngoEngine/engo"
 	"github.com/EngoEngine/engo/common"
 )
 
-type VideoSystem struct {
-	videoEntity      *VideoEntity
+type Video struct {
+	videoEntity      *entities.Video
 	elapsed          float32
 	frameCh          chan *image.NRGBA
 	dataHandlerIndex int
 	wg               *sync.WaitGroup
 }
 
-func (s *VideoSystem) New(w *ecs.World) {
+func (v *Video) New(w *ecs.World) {
 	rect := image.Rect(0, 0, 1280, 720)
-	s.videoEntity = &VideoEntity{BasicEntity: ecs.NewBasic()}
-	s.videoEntity.SpaceComponent = common.SpaceComponent{
+	v.videoEntity = &entities.Video{BasicEntity: ecs.NewBasic()}
+	v.videoEntity.SpaceComponent = common.SpaceComponent{
 		Position: engo.Point{X: 0, Y: 0},
 		Width:    1280,
 		Height:   720,
@@ -32,53 +33,53 @@ func (s *VideoSystem) New(w *ecs.World) {
 
 	obj := common.NewImageObject(img)
 
-	s.videoEntity.RenderComponent = common.RenderComponent{
+	v.videoEntity.RenderComponent = common.RenderComponent{
 		Drawable: common.NewTextureSingle(obj),
 	}
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
 		case *common.RenderSystem:
-			sys.Add(&s.videoEntity.BasicEntity,
-				&s.videoEntity.RenderComponent,
-				&s.videoEntity.SpaceComponent)
+			sys.Add(&v.videoEntity.BasicEntity,
+				&v.videoEntity.RenderComponent,
+				&v.videoEntity.SpaceComponent)
 		}
 	}
 
-	s.frameCh = make(chan *image.NRGBA, 30)
+	v.frameCh = make(chan *image.NRGBA, 30)
 
-	v, err := video.New()
+	appVideo, err := video.New()
 	if err != nil {
 		panic(err)
 	}
 
-	index, err := v.AddDataHandler(s.DataHandler)
+	index, err := appVideo.AddDataHandler(v.DataHandler)
 	if err != nil {
 		panic(err)
 	}
 
-	s.dataHandlerIndex = index
+	v.dataHandlerIndex = index
 
-	v.StartVideo()
+	appVideo.StartVideo()
 }
 
-func (s *VideoSystem) Add() {}
+func (v *Video) Add() {}
 
-func (s *VideoSystem) Remove(basic ecs.BasicEntity) {}
+func (v *Video) Remove(basic ecs.BasicEntity) {}
 
-func (s *VideoSystem) Update(dt float32) {
+func (v *Video) Update(dt float32) {
 	select {
-	case img := <-s.frameCh:
+	case img := <-v.frameCh:
 		obj := common.NewImageObject(img)
 		tex := common.NewTextureSingle(obj)
-		s.videoEntity.Drawable.Close()
-		s.videoEntity.Drawable = tex
+		v.videoEntity.Drawable.Close()
+		v.videoEntity.Drawable = tex
 	default:
 		//do nothing
 	}
 }
 
-func (s *VideoSystem) DataHandler(data []byte, wg *sync.WaitGroup) {
+func (v *Video) DataHandler(data []byte, wg *sync.WaitGroup) {
 	// Create an image out of the data byte slice.
 	img := image.NewNRGBA(
 		image.Rectangle{
@@ -88,7 +89,7 @@ func (s *VideoSystem) DataHandler(data []byte, wg *sync.WaitGroup) {
 	)
 	img.Pix = NRGBA(data)
 
-	s.frameCh <- img
+	v.frameCh <- img
 
 	wg.Done()
 }
