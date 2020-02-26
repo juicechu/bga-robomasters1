@@ -1,8 +1,8 @@
 package systems
 
 import (
-	"git.bug-br.org.br/bga/robomasters1/app/example2/components"
-	"git.bug-br.org.br/bga/robomasters1/app/example2/entities"
+	"git.bug-br.org.br/bga/robomasters1/app/example/components"
+	"git.bug-br.org.br/bga/robomasters1/app/example/entities"
 	"github.com/EngoEngine/ecs"
 	"github.com/EngoEngine/engo"
 )

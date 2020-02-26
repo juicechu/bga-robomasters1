@@ -3,9 +3,9 @@ package scenes
 import (
 	"time"
 
-	"git.bug-br.org.br/bga/robomasters1/app/example2/components"
-	"git.bug-br.org.br/bga/robomasters1/app/example2/entities"
-	"git.bug-br.org.br/bga/robomasters1/app/example2/systems"
+	"git.bug-br.org.br/bga/robomasters1/app/example/components"
+	"git.bug-br.org.br/bga/robomasters1/app/example/entities"
+	"git.bug-br.org.br/bga/robomasters1/app/example/systems"
 	"github.com/EngoEngine/ecs"
 	"github.com/EngoEngine/engo"
 	"github.com/EngoEngine/engo/common"

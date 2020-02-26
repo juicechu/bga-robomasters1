@@ -3,14 +3,14 @@ package main
 import (
 	"flag"
 
-	"git.bug-br.org.br/bga/robomasters1/app/example2/scenes"
+	"git.bug-br.org.br/bga/robomasters1/app/example/scenes"
 	"github.com/EngoEngine/engo"
 )
 
 var (
 	ssID = flag.String("ssid", "testssid",
 		"wifi network to connect to")
-	password = flag.String("password", "testpassword", "wifi password")
+	password = flag.String("password", "zwergschnauzer", "wifi password")
 	appID    = flag.Uint64("appid", 0, "if provided, use this app ID "+
 		"instead of creating a new one")
 )

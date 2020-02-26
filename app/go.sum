@@ -1,6 +1,7 @@
 fyne.io/fyne v1.2.1 h1:0hicR1E+hZGwZUwN5LheR5SoPr/ror8fGzQR2qJcZkA=
 fyne.io/fyne v1.2.1/go.mod h1:Ab+3DIB/FVteW0y4DXfmZv4N3JdnCBh2lHkINI02BOU=
 git.bug-br.org.br/bga/robomasters1 v0.0.0-20200105234152-3387e4bc5718 h1:9BMbp3uI6EhFp9SQkFjnX41HngcoBr8BeMLikleaYaE=
+git.bug-br.org.br/bga/robomasters1 v0.0.0-20200226193037-0bb12e562c98 h1:o/DNrJmTcQ4oI0lwllOWDIDY4l2AFz5x+3qtmdmPGSo=
 github.com/EngoEngine/ecs v1.0.3 h1:pmXSiY18aQ51PQpKX3i1c6Izg/05qO/2HEbjvapr27o=
 github.com/EngoEngine/ecs v1.0.3/go.mod h1:B/+b8S8xOPXaI05sFRBQ94nWHFxerBuSUPa4EXDNodg=
 github.com/EngoEngine/engo v1.0.4 h1:VmddPhEFJAE0+YWnp3GqC8VQI5ocLE23pwDgav5NsDQ=
